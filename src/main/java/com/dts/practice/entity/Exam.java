@@ -1,8 +1,10 @@
 package com.dts.practice.entity;
 
 import com.dts.practice.enums.ExamStatus;
+import io.hypersistence.utils.hibernate.type.array.ListArrayType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Type;
 
 import java.time.Instant;
 import java.util.List;
@@ -25,6 +27,7 @@ public class Exam {
     @Column(name = "exam_type", nullable = false, length = 10)
     private String examType;
 
+    @Type(ListArrayType.class)
     @Column(name = "question_ids", columnDefinition = "INTEGER[]")
     private List<Integer> questionIds;
 

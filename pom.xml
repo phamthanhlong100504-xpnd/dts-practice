@@ -81,6 +81,13 @@
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
 
+        <!-- Hibernate array mapping (INTEGER[] cho question_ids) -->
+        <dependency>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-63</artifactId>
+            <version>3.7.5</version>
+        </dependency>
+
         <!-- JWT (dùng để validate token từ identity-service) -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

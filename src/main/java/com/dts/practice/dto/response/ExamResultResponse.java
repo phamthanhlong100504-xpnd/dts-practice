@@ -2,6 +2,7 @@ package com.dts.practice.dto.response;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public record ExamResultResponse(
@@ -13,17 +14,7 @@ public record ExamResultResponse(
         Integer wrongCount,
         Integer score,
         Boolean passed,
-        List<AnswerDetailResponse> answers,
+        List<Map<String, Object>> answers,
         Instant startedAt,
         Instant completedAt
-) {}
-
-record AnswerDetailResponse(
-        Integer questionId,
-        String questionText,
-        Object options,
-        String correctAnswer,
-        String selectedAnswer,
-        Boolean isCorrect,
-        String explanation
 ) {}
