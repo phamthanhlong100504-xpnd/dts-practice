@@ -1,16 +1,15 @@
-# Builder stage
+# Stage 1: Build stage
 FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -B -q
-COPY src ./src
-RUN ./mvnw package -DskipTests -B -q
+COPY pom.xml .
+RUN mvn dependency:go-offline -B || true
+COPY src src
+RUN mvn package -DskipTests -B
 
-# Runtime stage
+# Stage 2: Runtime stage
 FROM eclipse-temurin:21-jre-alpine AS runtime
-RUN addgroup -S dts && adduser -S dts -G dts
 WORKDIR /app
+RUN addgroup -S dts && adduser -S dts -G dts
 COPY --from=builder /app/target/*.jar app.jar
 RUN chown -R dts:dts /app
 USER dts
