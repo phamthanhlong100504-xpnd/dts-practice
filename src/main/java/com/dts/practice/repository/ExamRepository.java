@@ -5,6 +5,8 @@ import com.dts.practice.enums.ExamStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,4 +22,10 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
     long countByUserId(UUID userId);
 
     long countByUserIdAndStatus(UUID userId, ExamStatus status);
+
+    List<Exam> findByStatusAndExpiresAtBefore(ExamStatus status, Instant now);
+
+    // Leaderboard: top exams in mode=EXAM, completed since a date, ordered by score
+    List<Exam> findByStatusAndModeAndCompletedAtAfterOrderByScoreDescCorrectCountDesc(
+            ExamStatus status, String mode, Instant since, Pageable pageable);
 }

@@ -8,14 +8,15 @@ services:
       - "${SERVER_PORT:-8082}:8082"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - DB_HOST=${DB_HOST:-postgres}
-      - DB_PORT=${DB_PORT:-5432}
-      - DB_NAME=${DB_NAME:-dts_practice}
-      - DB_USERNAME=${DB_USERNAME:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_HOST=dts-practice-postgres
+      - DB_PORT=5432
+      - DB_NAME=dts_practice
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
       - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
-      - JWT_ISSUER=${JWT_ISSUER:-dts-identity-service}
-      - IDENTITY_SERVICE_URL=${IDENTITY_SERVICE_URL:-http://identity-service:8081}
+      - JWT_ISSUER=dts-identity-service
+      - IDENTITY_SERVICE_URL=http://identity-service:8081
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - EUREKA_URI=${EUREKA_URI:-http://eureka-server:8761/eureka}
       - EUREKA_ENABLED=${EUREKA_ENABLED:-false}
     depends_on:
@@ -24,6 +25,7 @@ services:
     restart: unless-stopped
     networks:
       - dts-network
+      - dts-identity-network
 
   postgres:
     image: postgres:16-alpine
@@ -52,3 +54,6 @@ volumes:
 networks:
   dts-network:
     driver: bridge
+  dts-identity-network:
+    external: true
+    name: dts-identity_dts-network

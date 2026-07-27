@@ -34,13 +34,23 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: practice-service-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.dts.identity.*,com.dts.practice.dto.event,java.util,java.lang"
+    topics:
+      user-events: user-events
 
 server:
   port: ${SERVER_PORT:8082}
   shutdown: graceful
 
 jwt:
-  access-secret: ${JWT_ACCESS_SECRET:uPq3xK8mR5vY2wZ9aB4cD7eF1gH3iJ6kL0nO5pQ8rS2tU4vW6xY9zA1bC3dE7fG9}
+  access-secret: ${JWT_ACCESS_SECRET}
   issuer: ${JWT_ISSUER:dts-identity-service}
 
 identity:
@@ -58,14 +68,9 @@ management:
       probes:
         enabled: true
 
-logging:
-  level:
-    root: INFO
-    com.dts.practice: DEBUG
-    org.springframework.security: INFO
-    org.hibernate.SQL: WARN
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] %logger{36} - %msg%n"
+# ==================== Exam Config ====================
+exam:
+  auto-finish-interval-ms: 30000  # Check expired exams every 30s
 
 springdoc:
   api-docs:

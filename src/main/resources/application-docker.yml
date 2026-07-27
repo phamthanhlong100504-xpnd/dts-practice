@@ -1,8 +1,19 @@
 spring:
   datasource:
-    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:dts_practice}
+    url: jdbc:postgresql://${DB_HOST:dts-practice-postgres}:${DB_PORT:5432}/${DB_NAME:dts_practice}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: none  # Flyway manages schema; skip Hibernate validation to avoid array-type mismatch (_int4 vs INTEGER[])
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    consumer:
+      group-id: practice-service-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.dts.identity.*,java.util,java.lang"
 
 server:
   port: ${SERVER_PORT:8082}

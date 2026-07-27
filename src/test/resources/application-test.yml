@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:tc:postgresql:16-alpine:///dts_practice_test
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  flyway:
+    enabled: false
+  kafka:
+    enabled: false
+
+jwt:
+  access-secret: dGVzdC1zZWNyZXQta2V5LWZvci1qd3QtdmFsaWRhdGlvbi10ZXN0aW5nLXB1cnBvc2Vz
+  issuer: dts-identity-service-test
+
+exam:
+  auto-finish-interval-ms: 60000
+
+logging:
+  level:
+    root: WARN
+    com.dts.practice: DEBUG

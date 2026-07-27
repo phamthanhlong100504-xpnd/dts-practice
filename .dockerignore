@@ -1,0 +1,14 @@
+**/.git
+**/.gitignore
+**/.idea
+**/*.iml
+**/target
+**/node_modules
+**/.env
+**/.env.*
+!.env.example
+**/docker
+**/.github
+**/*.md
+**/.vscode
+**/.DS_Store

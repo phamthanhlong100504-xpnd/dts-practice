@@ -3,9 +3,8 @@ package com.dts.practice.service;
 import com.dts.practice.dto.response.QuestionResponse;
 import com.dts.practice.entity.Question;
 import com.dts.practice.exception.BusinessException;
+import com.dts.practice.mapper.QuestionMapper;
 import com.dts.practice.repository.QuestionRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,24 +19,20 @@ import java.util.List;
 public class QuestionService {
 
     private final QuestionRepository questionRepository;
-    private final ObjectMapper objectMapper;
+    private final QuestionMapper questionMapper;
 
     public List<QuestionResponse> getByChapter(Integer chapter) {
-        return questionRepository.findByChapter(chapter).stream()
-                .map(this::toResponse)
-                .toList();
+        return questionMapper.toResponseList(questionRepository.findByChapter(chapter));
     }
 
     public QuestionResponse getById(Integer id) {
         Question q = questionRepository.findById(id)
                 .orElseThrow(() -> BusinessException.notFound("Question not found: " + id));
-        return toResponse(q);
+        return questionMapper.toResponse(q);
     }
 
     public List<QuestionResponse> getCriticalQuestions() {
-        return questionRepository.findByIsCriticalTrue().stream()
-                .map(this::toResponse)
-                .toList();
+        return questionMapper.toResponseList(questionRepository.findByIsCriticalTrue());
     }
 
     public long countAll() {
@@ -46,22 +41,5 @@ public class QuestionService {
 
     public long countByChapter(Integer chapter) {
         return questionRepository.countByChapter(chapter);
-    }
-
-    private QuestionResponse toResponse(Question q) {
-        Object optionsObj;
-        try {
-            optionsObj = objectMapper.readValue(q.getOptions(), Object.class);
-        } catch (JsonProcessingException e) {
-            optionsObj = q.getOptions();
-        }
-        return new QuestionResponse(
-                q.getId(),
-                q.getChapter(),
-                q.getQuestionText(),
-                optionsObj,
-                q.getIsCritical(),
-                q.getImageUrl()
-        );
     }
 }

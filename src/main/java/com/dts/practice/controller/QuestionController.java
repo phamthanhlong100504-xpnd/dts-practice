@@ -3,6 +3,8 @@ package com.dts.practice.controller;
 import com.dts.practice.dto.response.ApiResponse;
 import com.dts.practice.dto.response.QuestionResponse;
 import com.dts.practice.service.QuestionService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,6 +14,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/questions")
 @RequiredArgsConstructor
+@Tag(name = "Questions", description = "Browse 600 driving license test questions by chapter")
+@SecurityRequirement(name = "BearerAuth")
 public class QuestionController {
 
     private final QuestionService questionService;

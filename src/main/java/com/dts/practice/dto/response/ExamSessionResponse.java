@@ -10,6 +10,9 @@ public record ExamSessionResponse(
         String status,
         Integer totalQuestions,
         Integer answeredCount,
+        Integer durationMinutes,
+        Instant expiresAt,
+        String mode,
         List<QuestionResponse> questions,
         Instant startedAt
 ) {}

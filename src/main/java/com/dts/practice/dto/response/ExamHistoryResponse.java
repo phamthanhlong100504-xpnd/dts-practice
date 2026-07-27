@@ -1,11 +1,9 @@
 package com.dts.practice.dto.response;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
-public record ExamResultResponse(
+public record ExamHistoryResponse(
         UUID examId,
         String examType,
         String status,
@@ -16,7 +14,6 @@ public record ExamResultResponse(
         Boolean passed,
         String mode,
         Integer durationMinutes,
-        List<Map<String, Object>> answers,
         Instant startedAt,
         Instant completedAt
 ) {}

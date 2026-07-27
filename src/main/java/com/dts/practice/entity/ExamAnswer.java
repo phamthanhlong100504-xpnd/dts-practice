@@ -2,11 +2,16 @@ package com.dts.practice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
 @Table(name = "exam_answers")
+@EntityListeners(AuditingEntityListener.class)
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
 @Builder
@@ -32,12 +37,16 @@ public class ExamAnswer {
     @Column(name = "answered_at")
     private Instant answeredAt;
 
+    @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @LastModifiedDate
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
     @PrePersist
     void onCreate() {
-        createdAt = Instant.now();
         if (answeredAt == null) answeredAt = Instant.now();
     }
 }
