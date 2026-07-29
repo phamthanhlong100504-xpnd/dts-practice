@@ -73,5 +73,11 @@ jobs:
             docker network create dts-network || true
             cd ${{ env.DEPLOY_DIR }}
             mv -f docker-compose.prod.yml docker-compose.yml
+            cat << EOF > .env
+            GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}
+            EOF
+            docker rm -f dts-practice-service || true
             docker compose pull
             docker compose up -d
