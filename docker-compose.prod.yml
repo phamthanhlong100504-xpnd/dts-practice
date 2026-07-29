@@ -5,7 +5,9 @@ services:
     restart: unless-stopped
     ports:
       - "${SERVER_PORT:-8083}:8082"
+    mem_limit: 200m
     environment:
+      - JAVA_TOOL_OPTIONS=-Xms64m -Xmx128m -Xquickstart
       - SPRING_PROFILES_ACTIVE=docker
       - DB_HOST=${DB_HOST:-dts-postgres}
       - DB_PORT=${DB_PORT:-5432}

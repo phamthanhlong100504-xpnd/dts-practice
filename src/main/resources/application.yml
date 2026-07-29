@@ -1,4 +1,8 @@
 spring:
+  main:
+    lazy-initialization: true
+  jmx:
+    enabled: false
   application:
     name: practice-service
   profiles:
@@ -48,6 +52,9 @@ spring:
 server:
   port: ${SERVER_PORT:8082}
   shutdown: graceful
+  tomcat:
+    threads:
+      max: 50
 
 jwt:
   access-secret: ${JWT_ACCESS_SECRET}
