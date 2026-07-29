@@ -1,6 +1,6 @@
 services:
   practice-service:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-dts}/practice-service:latest
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-phamthanhlong100504-xpnd}/practice-service:latest
     container_name: dts-practice-service
     restart: unless-stopped
     ports:
