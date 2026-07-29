@@ -4,7 +4,7 @@ services:
     container_name: dts-practice-service
     restart: unless-stopped
     ports:
-      - "${SERVER_PORT:-8082}:8080"
+      - "${SERVER_PORT:-8082}:8082"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - DB_HOST=${DB_HOST:-dts-postgres}
