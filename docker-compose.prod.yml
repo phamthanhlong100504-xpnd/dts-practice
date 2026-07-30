@@ -4,7 +4,7 @@ services:
     container_name: dts-practice-service
     restart: unless-stopped
     ports:
-      - "${SERVER_PORT:-8083}:8082"
+      - "${SERVER_PORT:-8087}:8087"
     mem_limit: 200m
     environment:
       - JAVA_TOOL_OPTIONS=-Xms64m -Xmx128m -Xquickstart

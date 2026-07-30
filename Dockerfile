@@ -7,18 +7,13 @@ COPY src src
 RUN mvn package -DskipTests -B
 
 # Stage 2: Runtime stage
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM ibm-semeru-runtimes:open-21-jre AS runtime
 WORKDIR /app
-RUN addgroup -S dts && adduser -S dts -G dts
+RUN groupadd -r dts && useradd -r -g dts -s /bin/false dts
 COPY --from=builder /app/target/*.jar app.jar
-RUN chown -R dts:dts /app
+RUN chown dts:dts app.jar
 USER dts
-EXPOSE 8080
+EXPOSE 8087
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=40s \
-    CMD wget -qO- http://localhost:8080/actuator/health || exit 1
-ENTRYPOINT ["java", \
-    "-XX:+UseZGC", \
-    "-XX:MaxRAMPercentage=75.0", \
-    "-XX:+ExitOnOutOfMemoryError", \
-    "-Djava.security.egd=file:/dev/./urandom", \
-    "-jar", "app.jar"]
+    CMD wget -qO- http://localhost:8087/actuator/health || curl -f http://localhost:8087/actuator/health || exit 1
+ENTRYPOINT ["java", "-jar", "app.jar"]
