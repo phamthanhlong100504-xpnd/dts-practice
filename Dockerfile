@@ -14,6 +14,5 @@ COPY --from=builder /app/target/*.jar app.jar
 RUN chown dts:dts app.jar
 USER dts
 EXPOSE 8087
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=90s \
-    CMD curl -sf http://localhost:8087/actuator/health || exit 1
+HEALTHCHECK NONE
 ENTRYPOINT ["java", "-jar", "app.jar"]
