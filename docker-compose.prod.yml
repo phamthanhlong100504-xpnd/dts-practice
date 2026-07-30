@@ -4,18 +4,23 @@ services:
     container_name: dts-practice-service
     restart: unless-stopped
     healthcheck:
-      disable: true
+      test: ["CMD-SHELL", "curl -f http://localhost:8087/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
     ports:
       - "${SERVER_PORT:-8083}:8087"
-    mem_limit: 180m
+    mem_limit: 256m
     environment:
       - JAVA_TOOL_OPTIONS=-Xms64m -Xmx128m -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m -Xss512k
       - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8087
       - DB_HOST=${DB_HOST:-postgres}
       - DB_PORT=${DB_PORT:-5432}
       - DB_NAME=${DB_NAME:-dts_practice}
       - DB_USERNAME=${DB_USERNAME:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD_PROD:-K59Ptl*100504}
+      - DB_PASSWORD=${DB_PASSWORD_PROD:-${DB_PASSWORD:-K59Ptl*100504}}
       - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET:-uPq3xK8mR5vY2wZ9aB4cD7eF1gH3iJ6kL0nO5pQ8rS2tU4vW6xY9zA1bC3dE7fG9}
       - JWT_ISSUER=${JWT_ISSUER:-dts-identity-service}
       - IDENTITY_SERVICE_URL=${IDENTITY_SERVICE_URL:-http://dts-identity-service:8081}
