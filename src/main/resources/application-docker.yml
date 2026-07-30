@@ -10,6 +10,8 @@ spring:
       ddl-auto: none  # Flyway manages schema; skip Hibernate validation to avoid array-type mismatch (_int4 vs INTEGER[])
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    listener:
+      auto-startup: ${SPRING_KAFKA_LISTENER_AUTO_STARTUP:false}
     consumer:
       group-id: practice-service-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
