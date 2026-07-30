@@ -7,7 +7,7 @@ services:
       - "${SERVER_PORT:-8087}:8087"
     mem_limit: 180m
     environment:
-      - JAVA_TOOL_OPTIONS=-Xms64m -Xmx128m -Xquickstart
+      - JAVA_TOOL_OPTIONS=-Xms64m -Xmx128m -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m -Xss512k
       - SPRING_PROFILES_ACTIVE=docker
       - DB_HOST=${DB_HOST:-postgres}
       - DB_PORT=${DB_PORT:-5432}
