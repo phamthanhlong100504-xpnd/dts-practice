@@ -5,11 +5,11 @@ services:
     restart: unless-stopped
     ports:
       - "${SERVER_PORT:-8087}:8087"
-    mem_limit: 200m
+    mem_limit: 180m
     environment:
       - JAVA_TOOL_OPTIONS=-Xms64m -Xmx128m -Xquickstart
       - SPRING_PROFILES_ACTIVE=docker
-      - DB_HOST=${DB_HOST:-dts-postgres}
+      - DB_HOST=${DB_HOST:-postgres}
       - DB_PORT=${DB_PORT:-5432}
       - DB_NAME=${DB_NAME:-dts_practice}
       - DB_USERNAME=${DB_USERNAME:-postgres}
@@ -17,7 +17,7 @@ services:
       - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
       - JWT_ISSUER=${JWT_ISSUER:-dts-identity-service}
       - IDENTITY_SERVICE_URL=${IDENTITY_SERVICE_URL:-http://identity-service:8081}
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-media-kafka:9092}
       - EUREKA_URI=${EUREKA_URI:-http://eureka-server:8761/eureka}
       - EUREKA_ENABLED=${EUREKA_ENABLED:-false}
     networks:
