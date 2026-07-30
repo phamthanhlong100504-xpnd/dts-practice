@@ -15,8 +15,8 @@ services:
       - DB_PORT=${DB_PORT:-5432}
       - DB_NAME=${DB_NAME:-dts_practice}
       - DB_USERNAME=${DB_USERNAME:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
+      - DB_PASSWORD=${DB_PASSWORD:-K59Ptl*100504}
+      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET:-uPq3xK8mR5vY2wZ9aB4cD7eF1gH3iJ6kL0nO5pQ8rS2tU4vW6xY9zA1bC3dE7fG9}
       - JWT_ISSUER=${JWT_ISSUER:-dts-identity-service}
       - IDENTITY_SERVICE_URL=${IDENTITY_SERVICE_URL:-http://dts-identity-service:8081}
       - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-media-kafka:9092}
