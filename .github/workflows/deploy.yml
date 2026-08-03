@@ -78,7 +78,7 @@ jobs:
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}
             EOF
-            docker rm -f dts-practice-service || true
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker compose pull
             docker compose up -d
             docker image prune -a -f

@@ -23,6 +23,9 @@ public class KafkaConfig {
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String bootstrapServers;
 
+    @Value("${spring.kafka.listener.auto-startup:true}")
+    private boolean autoStartup;
+
     @Bean
     public ConsumerFactory<String, Object> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
@@ -40,6 +43,7 @@ public class KafkaConfig {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
+        factory.setAutoStartup(autoStartup);
         factory.setCommonErrorHandler(new DefaultErrorHandler(
                 new FixedBackOff(1000L, 3L)));
         return factory;

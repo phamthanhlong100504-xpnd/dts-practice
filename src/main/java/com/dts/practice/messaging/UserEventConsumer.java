@@ -37,7 +37,8 @@ public class UserEventConsumer {
     );
 
     @KafkaListener(topics = "${spring.kafka.topics.user-events:user-events}",
-            groupId = "#{T(java.util.UUID).randomUUID().toString()}")
+            groupId = "#{T(java.util.UUID).randomUUID().toString()}",
+            autoStartup = "${spring.kafka.listener.auto-startup:false}")
     public void onUserEvent(@Payload(required = false) UserEvent event) {
         if (event == null) {
             log.warn("Received null event, skipping");

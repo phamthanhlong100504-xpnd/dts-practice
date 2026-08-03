@@ -1,10 +1,10 @@
 package com.dts.practice.entity;
 
 import com.dts.practice.enums.ExamStatus;
-import io.hypersistence.utils.hibernate.type.array.ListArrayType;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -31,8 +31,8 @@ public class Exam {
     @Column(name = "exam_type", nullable = false, length = 10)
     private String examType;
 
-    @Type(ListArrayType.class)
-    @Column(name = "question_ids", columnDefinition = "INTEGER[]")
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "question_ids")
     private List<Integer> questionIds;
 
     @Enumerated(EnumType.STRING)
