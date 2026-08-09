@@ -1,0 +1,1199 @@
+{
+  "info": {
+    "_postman_id": "dts-practice-auto-test",
+    "name": "DTS Practice Service - Auto Test",
+    "description": "# DTS Practice Service - Postman Collection\n\nAutomation test cho Practice Service (sat hach lai xe).\n\n## Luong chay khuyen nghi\n1. **[SETUP] Login lay Token** (bat buoc dau tien)\n2. Questions - Get Stats\n3. Questions - Get By Chapter\n4. Questions - Get Critical\n5. Questions - Get By ID\n6. Exams - Start Exam (EXAM mode)\n7. Exams - Get Session\n8. Exams - Submit Answers (tu dong)\n9. Exams - Finish Exam\n10. Exams - Get Result\n11. Exams - Start Practice (PRACTICE mode)\n12. Exams - Submit Answer Practice (co giai thich)\n13. Exams - Finish Practice\n14. Exams - Get Exam History\n15. Exams - Get Leaderboard\n\n## ExamType hop le\nA1, A2, B1, B2, C, D, E, F\n\n## Automation\n- Token tu dong lay tu Identity Service va luu vao accessToken\n- examId tu dong luu sau khi Start Exam\n- questionId tu dong lay tu exam session\n- Answer tu dong chon 'A' (khong can nhap tay)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{practiceAccessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// ============================================================",
+          "// COLLECTION PRE-REQUEST: Auto login neu chua co token",
+          "// Dam bao moi request deu co Bearer token hop le",
+          "// ============================================================",
+          "var token = pm.environment.get('practiceAccessToken');",
+          "var skipLogin = pm.request.url.toString().includes('/auth/login');",
+          "",
+          "if (!token || token === '' || token === 'undefined') {",
+          "    console.log('[AUTO-LOGIN] Token chua co, dang tu dong login...');",
+          "    var identityUrl = pm.environment.get('identityBaseUrl') || 'http://103.75.182.249:8081';",
+          "    var username = pm.environment.get('identityUsername') || 'testuser2';",
+          "    var password = pm.environment.get('identityPassword') || 'Test@1234';",
+          "",
+          "    pm.sendRequest({",
+          "        url: identityUrl + '/api/v1/auth/login',",
+          "        method: 'POST',",
+          "        header: { 'Content-Type': 'application/json' },",
+          "        body: {",
+          "            mode: 'raw',",
+          "            raw: JSON.stringify({ username: username, password: password })",
+          "        }",
+          "    }, function(err, res) {",
+          "        if (err) {",
+          "            console.error('[AUTO-LOGIN] Error:', err);",
+          "        } else {",
+          "            var json = res.json();",
+          "            if (json.success && json.data && json.data.accessToken) {",
+          "                pm.environment.set('practiceAccessToken', json.data.accessToken);",
+          "                pm.environment.set('practiceRefreshToken', json.data.refreshToken);",
+          "                pm.environment.set('practiceUserId', json.data.user.id);",
+          "                console.log('[AUTO-LOGIN] Token saved! User:', json.data.user.username);",
+          "            } else {",
+          "                console.error('[AUTO-LOGIN] Login failed:', json.message);",
+          "            }",
+          "        }",
+          "    });",
+          "} else {",
+          "    console.log('[TOKEN] Token da co san, skip auto-login.');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Response time < 5000ms', function() {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "[SETUP] Login - Lay Token",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Setup: lay token tu Identity Service truoc khi test Practice Service",
+              "console.log('Logging in to Identity Service to get token...');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+              "pm.test('Login success', function() {",
+              "    pm.expect(pm.response.json().success).to.be.true;",
+              "});",
+              "pm.test('Has accessToken', function() {",
+              "    pm.expect(pm.response.json().data.accessToken).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "var json = pm.response.json();",
+              "if (json.success && json.data) {",
+              "    pm.environment.set('practiceAccessToken', json.data.accessToken);",
+              "    pm.environment.set('practiceRefreshToken', json.data.refreshToken);",
+              "    pm.environment.set('practiceUserId', json.data.user.id);",
+              "    console.log('practiceAccessToken saved for user:', json.data.user.username);",
+              "    console.log('Roles:', json.data.user.roles.join(', '));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{identityUsername}}\",\n  \"password\": \"{{identityPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{identityBaseUrl}}/api/v1/auth/login",
+          "host": ["{{identityBaseUrl}}"],
+          "path": ["api", "v1", "auth", "login"]
+        },
+        "description": "Dang nhap vao Identity Service de lay access token. Token tu dong luu vao `practiceAccessToken`."
+      }
+    },
+    {
+      "name": "Questions",
+      "item": [
+        {
+          "name": "Get Question Stats",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('success=true', function() {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Has byChapter data', function() {",
+                  "    var data = pm.response.json().data;",
+                  "    pm.expect(data).to.have.property('byChapter');",
+                  "    pm.expect(data).to.have.property('total');",
+                  "});",
+                  "pm.test('Total = 600 questions', function() {",
+                  "    pm.expect(pm.response.json().data.total).to.equal(600);",
+                  "});",
+                  "",
+                  "var data = pm.response.json().data;",
+                  "console.log('Total questions:', data.total);",
+                  "console.log('By chapter:', JSON.stringify(data.byChapter));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/questions/stats",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "questions", "stats"]
+            },
+            "description": "Lay thong ke tong so cau hoi theo tung chuong."
+          }
+        },
+        {
+          "name": "Get Critical Questions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('success=true', function() {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Has critical questions array', function() {",
+                  "    pm.expect(pm.response.json().data).to.be.an('array');",
+                  "    pm.expect(pm.response.json().data.length).to.be.greaterThan(0);",
+                  "});",
+                  "pm.test('All questions are critical', function() {",
+                  "    pm.response.json().data.forEach(function(q) {",
+                  "        pm.expect(q.isCritical).to.be.true;",
+                  "    });",
+                  "});",
+                  "",
+                  "var data = pm.response.json().data;",
+                  "if (data.length > 0) {",
+                  "    pm.environment.set('criticalQuestionId', data[0].id);",
+                  "    console.log('Critical questions:', data.length);",
+                  "    console.log('First critical Q ID:', data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/questions/critical",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "questions", "critical"]
+            },
+            "description": "Lay danh sach cac cau hoi diem liet. Luu ID cau hoi dau tien vao criticalQuestionId."
+          }
+        },
+        {
+          "name": "Get Questions by Chapter (Chapter 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('success=true', function() {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Has questions array', function() {",
+                  "    pm.expect(pm.response.json().data).to.be.an('array');",
+                  "    pm.expect(pm.response.json().data.length).to.be.greaterThan(0);",
+                  "});",
+                  "pm.test('Questions have required fields', function() {",
+                  "    var q = pm.response.json().data[0];",
+                  "    pm.expect(q).to.have.property('id');",
+                  "    pm.expect(q).to.have.property('questionText');",
+                  "    pm.expect(q).to.have.property('options');",
+                  "    pm.expect(q).to.have.property('chapter');",
+                  "});",
+                  "pm.test('All questions are chapter 1', function() {",
+                  "    pm.response.json().data.forEach(function(q) {",
+                  "        pm.expect(q.chapter).to.equal(1);",
+                  "    });",
+                  "});",
+                  "",
+                  "var data = pm.response.json().data;",
+                  "if (data.length > 0) {",
+                  "    pm.environment.set('sampleQuestionId', data[0].id);",
+                  "    console.log('Chapter 1 questions:', data.length);",
+                  "    console.log('sampleQuestionId:', data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/questions/chapter/{{testChapter}}",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "questions", "chapter", "{{testChapter}}"]
+            },
+            "description": "Lay danh sach cau hoi theo chuong. Dung bien testChapter (mac dinh: 1)."
+          }
+        },
+        {
+          "name": "Get Questions by Chapter (Chapter 2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('Chapter 2 questions returned', function() {",
+                  "    var data = pm.response.json().data;",
+                  "    pm.expect(data).to.be.an('array');",
+                  "    pm.expect(data.length).to.be.greaterThan(0);",
+                  "});",
+                  "pm.test('All questions are chapter 2', function() {",
+                  "    pm.response.json().data.forEach(function(q) {",
+                  "        pm.expect(q.chapter).to.equal(2);",
+                  "    });",
+                  "});",
+                  "console.log('Chapter 2 count:', pm.response.json().data.length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/questions/chapter/2",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "questions", "chapter", "2"]
+            }
+          }
+        },
+        {
+          "name": "Get Question by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('success=true', function() {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Question has required fields', function() {",
+                  "    var q = pm.response.json().data;",
+                  "    pm.expect(q).to.have.property('id');",
+                  "    pm.expect(q).to.have.property('questionText');",
+                  "    pm.expect(q).to.have.property('options');",
+                  "    pm.expect(q.options).to.be.an('array').and.not.empty;",
+                  "});",
+                  "console.log('Question:', pm.response.json().data.id, '-', pm.response.json().data.questionText.substring(0, 50));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/questions/{{sampleQuestionId}}",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "questions", "{{sampleQuestionId}}"]
+            },
+            "description": "Lay chi tiet mot cau hoi theo ID. Dung sampleQuestionId tu Chapter request."
+          }
+        },
+        {
+          "name": "Get Question by ID - Invalid (404 check)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Returns error for invalid ID', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([404, 400, 500]);",
+                  "});",
+                  "console.log('Invalid ID response:', pm.response.status);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/questions/99999",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "questions", "99999"]
+            },
+            "description": "Test negative case: cau hoi khong ton tai."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Exams - EXAM Mode (A1)",
+      "item": [
+        {
+          "name": "Start Exam A1 (EXAM mode)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 Created', function() { pm.response.to.have.status(201); });",
+                  "pm.test('success=true', function() {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Has examId', function() {",
+                  "    pm.expect(pm.response.json().data.examId).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('examType=A1', function() {",
+                  "    pm.expect(pm.response.json().data.examType).to.equal('A1');",
+                  "});",
+                  "pm.test('Status=IN_PROGRESS', function() {",
+                  "    pm.expect(pm.response.json().data.status).to.equal('IN_PROGRESS');",
+                  "});",
+                  "pm.test('Has 25 questions', function() {",
+                  "    pm.expect(pm.response.json().data.questions).to.have.lengthOf(25);",
+                  "});",
+                  "pm.test('Questions have options', function() {",
+                  "    var q = pm.response.json().data.questions[0];",
+                  "    pm.expect(q.options).to.be.an('array').and.not.empty;",
+                  "});",
+                  "",
+                  "var data = pm.response.json().data;",
+                  "pm.environment.set('currentExamId', data.examId);",
+                  "pm.environment.set('examMode', 'EXAM');",
+                  "",
+                  "// Luu toan bo danh sach question ID de submit tu dong",
+                  "var questionIds = data.questions.map(function(q) { return String(q.id); });",
+                  "pm.environment.set('examQuestionIds', JSON.stringify(questionIds));",
+                  "pm.environment.set('examQuestionIndex', '0');",
+                  "pm.environment.set('firstExamQuestionId', String(data.questions[0].id));",
+                  "",
+                  "console.log('Exam started. ID:', data.examId);",
+                  "console.log('Total questions:', data.totalQuestions);",
+                  "console.log('Duration:', data.durationMinutes, 'minutes');",
+                  "console.log('Question IDs saved:', questionIds.slice(0,5).join(', '), '...');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"examType\": \"A1\",\n  \"totalQuestions\": 25,\n  \"durationMinutes\": 19,\n  \"mode\": \"EXAM\"\n}"
+            },
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/exams",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "exams"]
+            },
+            "description": "Bat dau bai thi A1 chinh thuc (25 cau, 19 phut). examId tu dong luu vao currentExamId."
+          }
+        },
+        {
+          "name": "Get Exam Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('success=true', function() {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Exam is IN_PROGRESS', function() {",
+                  "    pm.expect(pm.response.json().data.status).to.equal('IN_PROGRESS');",
+                  "});",
+                  "pm.test('Has questions', function() {",
+                  "    pm.expect(pm.response.json().data.questions).to.be.an('array');",
+                  "});",
+                  "",
+                  "var data = pm.response.json().data;",
+                  "console.log('Session: answered', data.answeredCount, '/', data.totalQuestions);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/exams/{{currentExamId}}",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "exams", "{{currentExamId}}"]
+            },
+            "description": "Lay thong tin phien thi hien tai. Dung currentExamId."
+          }
+        },
+        {
+          "name": "Submit Answer Q1",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Lay question ID dau tien tu examQuestionIds",
+                  "var ids = JSON.parse(pm.environment.get('examQuestionIds') || '[]');",
+                  "if (ids.length > 0) {",
+                  "    pm.environment.set('currentAnswerQuestionId', ids[0]);",
+                  "    console.log('Submitting answer for Q:', ids[0]);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('success=true', function() {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Has answer result', function() {",
+                  "    var data = pm.response.json().data;",
+                  "    pm.expect(data).to.have.property('status');",
+                  "});",
+                  "",
+                  "var data = pm.response.json().data;",
+                  "console.log('Answer submitted. isCorrect:', data.isCorrect, '| correctAnswer:', data.correctAnswer);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionId\": \"{{currentAnswerQuestionId}}\",\n  \"selectedAnswer\": \"A\"\n}"
+            },
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/exams/{{currentExamId}}/answers",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "exams", "{{currentExamId}}", "answers"]
+            },
+            "description": "Submit dap an cho cau hoi dau tien. Auto chon dap an 'A'."
+          }
+        },
+        {
+          "name": "[CHI DUNG COLLECTION RUNNER] Submit All Remaining Answers (Auto Loop)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Auto submit tung cau hoi mot luot",
+                  "var ids = JSON.parse(pm.environment.get('examQuestionIds') || '[]');",
+                  "var idx = parseInt(pm.environment.get('examQuestionIndex') || '1');",
+                  "",
+                  "if (idx < ids.length) {",
+                  "    pm.environment.set('currentAnswerQuestionId', ids[idx]);",
+                  "    pm.environment.set('examQuestionIndex', String(idx + 1));",
+                  "    console.log('Submitting Q[' + idx + ']: id=' + ids[idx] + ' (' + (idx+1) + '/' + ids.length + ')');",
+                  "} else {",
+                  "    console.log('All questions answered!');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "",
+                  "var ids = JSON.parse(pm.environment.get('examQuestionIds') || '[]');",
+                  "var idx = parseInt(pm.environment.get('examQuestionIndex') || '1');",
+                  "",
+                  "// Tiep tuc loop neu con cau hoi chua tra loi (dung voi Collection Runner delay)",
+                  "if (idx < ids.length) {",
+                  "    postman.setNextRequest('Submit All Remaining Answers (Auto Loop)');",
+                  "} else {",
+                  "    console.log('All', ids.length, 'answers submitted!');",
+                  "    postman.setNextRequest('Finish Exam (EXAM mode)');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionId\": \"{{currentAnswerQuestionId}}\",\n  \"selectedAnswer\": \"A\"\n}"
+            },
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/exams/{{currentExamId}}/answers",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "exams", "{{currentExamId}}", "answers"]
+            },
+            "description": "Auto loop qua toan bo danh sach cau hoi va submit dap an 'A'. Lap lai tu dong cho den khi het cau hoi."
+          }
+        },
+        {
+          "name": "Finish Exam (EXAM mode)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('success=true', function() {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Exam COMPLETED', function() {",
+                  "    pm.expect(pm.response.json().data.status).to.equal('COMPLETED');",
+                  "});",
+                  "pm.test('Has score', function() {",
+                  "    pm.expect(pm.response.json().data).to.have.property('score');",
+                  "    pm.expect(pm.response.json().data).to.have.property('correctCount');",
+                  "    pm.expect(pm.response.json().data).to.have.property('passed');",
+                  "});",
+                  "pm.test('Score is valid range (0-100)', function() {",
+                  "    pm.expect(pm.response.json().data.score).to.be.within(0, 100);",
+                  "});",
+                  "",
+                  "var data = pm.response.json().data;",
+                  "pm.environment.set('completedExamId', data.examId);",
+                  "console.log('=== EXAM RESULT ===');",
+                  "console.log('Score:', data.score);",
+                  "console.log('Correct:', data.correctCount, '/', data.totalQuestions);",
+                  "console.log('Passed:', data.passed);",
+                  "console.log('Type:', data.examType);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/exams/{{currentExamId}}/finish",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "exams", "{{currentExamId}}", "finish"]
+            },
+            "description": "Ket thuc bai thi. Tra ve diem so, so cau dung, ket qua dau/rot."
+          }
+        },
+        {
+          "name": "Get Exam Session Info (after finish)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('success=true', function() {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Status is COMPLETED', function() {",
+                  "    pm.expect(pm.response.json().data.status).to.equal('COMPLETED');",
+                  "});",
+                  "pm.test('Has answeredCount', function() {",
+                  "    pm.expect(pm.response.json().data).to.have.property('answeredCount');",
+                  "});",
+                  "pm.test('Has questions array', function() {",
+                  "    pm.expect(pm.response.json().data.questions).to.be.an('array');",
+                  "});",
+                  "",
+                  "// NOTE: Day la SESSION endpoint (GET /exams/{id}), tra ve thong tin phien thi:",
+                  "// answeredCount, questions[], expiresAt, mode, status",
+                  "// Khac voi RESULT endpoint (GET /exams/{id}/result) tra ve score, correctCount, answers[]",
+                  "var data = pm.response.json().data;",
+                  "console.log('Session info: answered=' + data.answeredCount + '/' + data.totalQuestions + ' status=' + data.status);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/exams/{{completedExamId}}",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "exams", "{{completedExamId}}"]
+            },
+            "description": "GET /exams/{id} - Session endpoint. Tra ve thong tin phien thi: answeredCount, questions[], expiresAt.\nKhac voi /result endpoint tra ve score, correctCount, answers[]."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Exams - PRACTICE Mode",
+      "item": [
+        {
+          "name": "Start Practice Session (B1 - PRACTICE mode)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 Created', function() { pm.response.to.have.status(201); });",
+                  "pm.test('success=true', function() {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('mode=PRACTICE', function() {",
+                  "    pm.expect(pm.response.json().data.mode).to.equal('PRACTICE');",
+                  "});",
+                  "pm.test('Has examId', function() {",
+                  "    pm.expect(pm.response.json().data.examId).to.not.be.empty;",
+                  "});",
+                  "",
+                  "var data = pm.response.json().data;",
+                  "pm.environment.set('practiceSessionId', data.examId);",
+                  "",
+                  "var qids = data.questions.map(function(q) { return String(q.id); });",
+                  "pm.environment.set('practiceQuestionIds', JSON.stringify(qids));",
+                  "pm.environment.set('practiceQuestionIndex', '0');",
+                  "pm.environment.set('practiceFirstQuestionId', String(data.questions[0].id));",
+                  "",
+                  "console.log('Practice session started:', data.examId);",
+                  "console.log('Questions:', data.totalQuestions, '| Mode:', data.mode);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"examType\": \"B1\",\n  \"totalQuestions\": 10,\n  \"durationMinutes\": 30,\n  \"mode\": \"PRACTICE\"\n}"
+            },
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/exams",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "exams"]
+            },
+            "description": "Bat dau luyen tap B1 mode PRACTICE (10 cau). Co giai thich dap an sau moi cau."
+          }
+        },
+        {
+          "name": "Submit Answer Practice Q1 (get explanation)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ids = JSON.parse(pm.environment.get('practiceQuestionIds') || '[]');",
+                  "if (ids.length > 0) {",
+                  "    pm.environment.set('practiceCurrentQId', ids[0]);",
+                  "    pm.environment.set('practiceQuestionIndex', '1');",
+                  "    console.log('Practice submitting Q:', ids[0]);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('success=true', function() {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Has answer status', function() {",
+                  "    pm.expect(pm.response.json().data).to.have.property('status');",
+                  "});",
+                  "",
+                  "var data = pm.response.json().data;",
+                  "console.log('Practice Q1 - isCorrect:', data.isCorrect);",
+                  "console.log('Correct answer:', data.correctAnswer);",
+                  "if (data.explanation) console.log('Explanation:', data.explanation.substring(0, 80));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionId\": \"{{practiceCurrentQId}}\",\n  \"selectedAnswer\": \"B\"\n}"
+            },
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/exams/{{practiceSessionId}}/answers",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "exams", "{{practiceSessionId}}", "answers"]
+            },
+            "description": "Submit dap an trong mode PRACTICE. Tra ve correctAnswer va explanation."
+          }
+        },
+        {
+          "name": "Submit Remaining Practice Answers (Auto Loop)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ids = JSON.parse(pm.environment.get('practiceQuestionIds') || '[]');",
+                  "var idx = parseInt(pm.environment.get('practiceQuestionIndex') || '1');",
+                  "if (idx < ids.length) {",
+                  "    pm.environment.set('practiceCurrentQId', ids[idx]);",
+                  "    pm.environment.set('practiceQuestionIndex', String(idx + 1));",
+                  "    console.log('Practice Q[' + idx + ']: id=' + ids[idx]);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "",
+                  "var ids = JSON.parse(pm.environment.get('practiceQuestionIds') || '[]');",
+                  "var idx = parseInt(pm.environment.get('practiceQuestionIndex') || '1');",
+                  "if (idx < ids.length) {",
+                  "    postman.setNextRequest('Submit Remaining Practice Answers (Auto Loop)');",
+                  "} else {",
+                  "    console.log('All practice answers done!');",
+                  "    postman.setNextRequest('Finish Practice Session');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionId\": \"{{practiceCurrentQId}}\",\n  \"selectedAnswer\": \"A\"\n}"
+            },
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/exams/{{practiceSessionId}}/answers",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "exams", "{{practiceSessionId}}", "answers"]
+            }
+          }
+        },
+        {
+          "name": "Finish Practice Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('Practice COMPLETED', function() {",
+                  "    pm.expect(pm.response.json().data.status).to.equal('COMPLETED');",
+                  "});",
+                  "pm.test('Has score', function() {",
+                  "    pm.expect(pm.response.json().data).to.have.property('score');",
+                  "});",
+                  "",
+                  "var data = pm.response.json().data;",
+                  "pm.environment.set('completedPracticeId', data.examId);",
+                  "console.log('Practice done! Score:', data.score, '| Mode:', data.mode);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/exams/{{practiceSessionId}}/finish",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "exams", "{{practiceSessionId}}", "finish"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Exams - Other Types",
+      "item": [
+        {
+          "name": "Start Exam A2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function() { pm.response.to.have.status(201); });",
+                  "pm.test('examType=A2', function() { pm.expect(pm.response.json().data.examType).to.equal('A2'); });",
+                  "var data = pm.response.json().data;",
+                  "pm.environment.set('a2ExamId', data.examId);",
+                  "console.log('A2 exam started:', data.examId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"examType\": \"A2\",\n  \"totalQuestions\": 5,\n  \"durationMinutes\": 10,\n  \"mode\": \"EXAM\"\n}" },
+            "url": { "raw": "{{practiceBaseUrl}}/api/v1/exams", "host": ["{{practiceBaseUrl}}"], "path": ["api","v1","exams"] }
+          }
+        },
+        {
+          "name": "Finish Exam A2 (no answers)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('A2 Completed', function() { pm.expect(pm.response.json().data.status).to.equal('COMPLETED'); });",
+                  "console.log('A2 Score:', pm.response.json().data.score);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{practiceBaseUrl}}/api/v1/exams/{{a2ExamId}}/finish", "host": ["{{practiceBaseUrl}}"], "path": ["api","v1","exams","{{a2ExamId}}","finish"] }
+          }
+        },
+        {
+          "name": "Start Exam B2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function() { pm.response.to.have.status(201); });",
+                  "pm.test('examType=B2', function() { pm.expect(pm.response.json().data.examType).to.equal('B2'); });",
+                  "pm.environment.set('b2ExamId', pm.response.json().data.examId);",
+                  "console.log('B2 exam started:', pm.response.json().data.examId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"examType\": \"B2\",\n  \"totalQuestions\": 35,\n  \"durationMinutes\": 22,\n  \"mode\": \"EXAM\"\n}" },
+            "url": { "raw": "{{practiceBaseUrl}}/api/v1/exams", "host": ["{{practiceBaseUrl}}"], "path": ["api","v1","exams"] }
+          }
+        },
+        {
+          "name": "Finish Exam B2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "console.log('B2 Score:', pm.response.json().data.score);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{practiceBaseUrl}}/api/v1/exams/{{b2ExamId}}/finish", "host": ["{{practiceBaseUrl}}"], "path": ["api","v1","exams","{{b2ExamId}}","finish"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Exams - History & Leaderboard",
+      "item": [
+        {
+          "name": "Get Exam History (page 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('success=true', function() {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Has paginated data', function() {",
+                  "    var data = pm.response.json().data;",
+                  "    pm.expect(data).to.have.property('content');",
+                  "    pm.expect(data).to.have.property('totalElements');",
+                  "    pm.expect(data.content).to.be.an('array');",
+                  "});",
+                  "pm.test('History has exams', function() {",
+                  "    pm.expect(pm.response.json().data.totalElements).to.be.greaterThan(0);",
+                  "});",
+                  "",
+                  "var data = pm.response.json().data;",
+                  "console.log('Exam history - total:', data.totalElements, '| page size:', data.content.length);",
+                  "if (data.content.length > 0) {",
+                  "    var last = data.content[0];",
+                  "    console.log('Latest exam: type=' + last.examType + ' score=' + last.score + ' passed=' + last.passed);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/exams/history?page=0&size=10",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "exams", "history"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            },
+            "description": "Lay lich su thi cua user hien tai (phan trang)."
+          }
+        },
+        {
+          "name": "Get Exam History - Filter by page 2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('success=true', function() {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "console.log('Page 2 history count:', pm.response.json().data.content.length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/exams/history?page=1&size=5",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "exams", "history"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "size", "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Leaderboard (All time)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "pm.test('success=true', function() {",
+                  "    pm.expect(pm.response.json().success).to.be.true;",
+                  "});",
+                  "pm.test('Has leaderboard array', function() {",
+                  "    pm.expect(pm.response.json().data).to.be.an('array');",
+                  "});",
+                  "pm.test('Leaderboard entries have required fields', function() {",
+                  "    if (pm.response.json().data.length > 0) {",
+                  "        var entry = pm.response.json().data[0];",
+                  "        pm.expect(entry).to.have.property('score');",
+                  "        pm.expect(entry).to.have.property('correctCount');",
+                  "        pm.expect(entry).to.have.property('examType');",
+                  "    }",
+                  "});",
+                  "",
+                  "console.log('Leaderboard entries:', pm.response.json().data.length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/exams/leaderboard",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "exams", "leaderboard"],
+              "query": [
+                { "key": "period", "value": "all", "disabled": true },
+                { "key": "examType", "value": "A1", "disabled": true }
+              ]
+            },
+            "description": "Lay bang xep hang toan thoi gian."
+          }
+        },
+        {
+          "name": "Get Leaderboard - Filter A1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                  "console.log('A1 Leaderboard entries:', pm.response.json().data.length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{practiceBaseUrl}}/api/v1/exams/leaderboard?examType=A1",
+              "host": ["{{practiceBaseUrl}}"],
+              "path": ["api", "v1", "exams", "leaderboard"],
+              "query": [{ "key": "examType", "value": "A1" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Negative Tests",
+      "item": [
+        {
+          "name": "Start Exam - Invalid examType",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Returns error for invalid examType', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});",
+                  "console.log('Invalid examType response:', pm.response.status, pm.response.text().substring(0,100));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"examType\": \"INVALID_TYPE\",\n  \"totalQuestions\": 10,\n  \"durationMinutes\": 20,\n  \"mode\": \"EXAM\"\n}" },
+            "url": { "raw": "{{practiceBaseUrl}}/api/v1/exams", "host": ["{{practiceBaseUrl}}"], "path": ["api","v1","exams"] }
+          }
+        },
+        {
+          "name": "Get Exam - Non-existent ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Returns error for non-existent exam', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([404, 400, 403, 500]);",
+                  "});",
+                  "console.log('Non-existent exam response:', pm.response.status);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{practiceBaseUrl}}/api/v1/exams/00000000-0000-0000-0000-000000000000", "host": ["{{practiceBaseUrl}}"], "path": ["api","v1","exams","00000000-0000-0000-0000-000000000000"] }
+          }
+        },
+        {
+          "name": "Access Without Token (401 check)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Returns 401 Unauthorized without token', function() {",
+                  "    pm.expect(pm.response.code).to.equal(401);",
+                  "});",
+                  "console.log('No-token response:', pm.response.status);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{practiceBaseUrl}}/api/v1/questions/stats", "host": ["{{practiceBaseUrl}}"], "path": ["api","v1","questions","stats"] }
+          }
+        },
+        {
+          "name": "Start Exam - Missing Required Field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Returns error for missing examType', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});",
+                  "console.log('Missing field response:', pm.response.status);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"totalQuestions\": 10,\n  \"durationMinutes\": 20\n}" },
+            "url": { "raw": "{{practiceBaseUrl}}/api/v1/exams", "host": ["{{practiceBaseUrl}}"], "path": ["api","v1","exams"] }
+          }
+        }
+      ]
+    }
+  ]
+}

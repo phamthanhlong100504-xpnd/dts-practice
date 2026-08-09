@@ -1,0 +1,169 @@
+{
+  "id": "dts-practice-env-vps",
+  "name": "DTS Practice - VPS (103.75.182.249)",
+  "values": [
+    {
+      "key": "practiceBaseUrl",
+      "value": "http://103.75.182.249:8083",
+      "type": "default",
+      "enabled": true,
+      "description": "Practice Service URL tren VPS"
+    },
+    {
+      "key": "identityBaseUrl",
+      "value": "http://103.75.182.249:8081",
+      "type": "default",
+      "enabled": true,
+      "description": "Identity Service URL - dung de lay token"
+    },
+    {
+      "key": "identityUsername",
+      "value": "testuser2",
+      "type": "default",
+      "enabled": true,
+      "description": "Username da xac nhan co ROLE_ADMIN"
+    },
+    {
+      "key": "identityPassword",
+      "value": "Test@1234",
+      "type": "secret",
+      "enabled": true,
+      "description": "Password da xac nhan"
+    },
+    {
+      "key": "testChapter",
+      "value": "1",
+      "type": "default",
+      "enabled": true,
+      "description": "Chuong de test (1-6)"
+    },
+    {
+      "key": "practiceAccessToken",
+      "value": "",
+      "type": "secret",
+      "enabled": true,
+      "description": "[TU DONG] Access token - duoc set tu dong boi request [SETUP] Login"
+    },
+    {
+      "key": "practiceRefreshToken",
+      "value": "",
+      "type": "secret",
+      "enabled": true,
+      "description": "[TU DONG] Refresh token"
+    },
+    {
+      "key": "practiceUserId",
+      "value": "36869a37-1eae-4635-9951-f09acc4ddb06",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] User ID cua testuser2 - pre-filled"
+    },
+    {
+      "key": "currentExamId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] ID bai thi EXAM mode hien tai"
+    },
+    {
+      "key": "practiceSessionId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] ID phien luyen tap PRACTICE mode"
+    },
+    {
+      "key": "completedExamId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] ID bai thi da hoan thanh"
+    },
+    {
+      "key": "completedPracticeId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] ID phien luyen tap da hoan thanh"
+    },
+    {
+      "key": "examQuestionIds",
+      "value": "[]",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] JSON array cac question ID trong bai thi EXAM"
+    },
+    {
+      "key": "examQuestionIndex",
+      "value": "0",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] Index cau hoi hien tai dang submit (cho auto loop)"
+    },
+    {
+      "key": "practiceQuestionIds",
+      "value": "[]",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] JSON array cac question ID trong phien PRACTICE"
+    },
+    {
+      "key": "practiceQuestionIndex",
+      "value": "0",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] Index cau hoi PRACTICE hien tai"
+    },
+    {
+      "key": "currentAnswerQuestionId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] Question ID dang submit (EXAM mode)"
+    },
+    {
+      "key": "practiceCurrentQId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] Question ID dang submit (PRACTICE mode)"
+    },
+    {
+      "key": "firstExamQuestionId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] Question ID cau dau tien trong bai thi"
+    },
+    {
+      "key": "sampleQuestionId",
+      "value": "1",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] ID cau hoi mau (tu Get By Chapter). Mac dinh: 1"
+    },
+    {
+      "key": "criticalQuestionId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] ID cau hoi diem liet dau tien"
+    },
+    {
+      "key": "a2ExamId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] ID bai thi A2"
+    },
+    {
+      "key": "b2ExamId",
+      "value": "",
+      "type": "default",
+      "enabled": true,
+      "description": "[TU DONG] ID bai thi B2"
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-07-31T04:13:00.000Z"
+}
