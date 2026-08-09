@@ -298,6 +298,7 @@ public class ExamService {
             detail.put("questionId", q.getId());
             detail.put("questionText", q.getQuestionText());
             detail.put("options", options);
+            detail.put("imageUrl", q.getImageUrl());
             detail.put("correctAnswer", q.getCorrectAnswer());
             detail.put("selectedAnswer", ans.getSelectedAnswer() != null ? ans.getSelectedAnswer() : "");
             detail.put("isCorrect", ans.getIsCorrect() != null ? ans.getIsCorrect() : false);
