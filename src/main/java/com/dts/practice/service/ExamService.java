@@ -335,4 +335,4 @@ public class ExamService {
             UUID userId, String username, String examType, Integer score,
             Integer correctCount, Integer totalQuestions, Instant completedAt) {}
 }
-}
+
