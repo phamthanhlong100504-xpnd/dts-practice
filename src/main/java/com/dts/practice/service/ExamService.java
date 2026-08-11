@@ -72,6 +72,7 @@ public class ExamService {
         Instant now = Instant.now();
         Exam exam = Exam.builder()
                 .userId(user.userId())
+                .username(user.username())
                 .examType(request.examType())
                 .questionIds(selectedIds)
                 .totalQuestions(totalQuestions)
@@ -242,7 +243,11 @@ public class ExamService {
 
         return topExams.stream()
                 .map(e -> new LeaderboardEntry(
-                        e.getUserId(), e.getExamType(), e.getScore(),
+                        e.getUserId(),
+                        e.getUsername() != null && !e.getUsername().isBlank()
+                                ? e.getUsername()
+                                : (e.getUserId() != null ? "user_" + e.getUserId().toString().substring(0, 6) : "Thí sinh"),
+                        e.getExamType(), e.getScore(),
                         e.getCorrectCount(), e.getTotalQuestions(), e.getCompletedAt()))
                 .toList();
     }
@@ -327,6 +332,7 @@ public class ExamService {
 
     // Inner record for leaderboard entry
     public record LeaderboardEntry(
-            UUID userId, String examType, Integer score,
+            UUID userId, String username, String examType, Integer score,
             Integer correctCount, Integer totalQuestions, Instant completedAt) {}
+}
 }

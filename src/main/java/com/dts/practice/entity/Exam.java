@@ -28,6 +28,9 @@ public class Exam {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Column(name = "username", length = 100)
+    private String username;
+
     @Column(name = "exam_type", nullable = false, length = 10)
     private String examType;
 
