@@ -40,7 +40,7 @@ class QuestionServiceTest {
         @DisplayName("should return question response when question exists")
         void whenExists_shouldReturnQuestionResponse() {
             Question question = Question.builder().id(1).chapter(1).questionText("Q1").build();
-            QuestionResponse response = new QuestionResponse(1, 1, "Q1", null, false, null);
+            QuestionResponse response = new QuestionResponse(1, 1, "Q1", null, false, null, null, null);
 
             given(questionRepository.findById(1)).willReturn(Optional.of(question));
             given(questionMapper.toResponse(question)).willReturn(response);
@@ -72,8 +72,8 @@ class QuestionServiceTest {
         void shouldReturnQuestionList() {
             Question q1 = Question.builder().id(1).chapter(1).build();
             Question q2 = Question.builder().id(2).chapter(1).build();
-            QuestionResponse r1 = new QuestionResponse(1, 1, "Q1", null, false, null);
-            QuestionResponse r2 = new QuestionResponse(2, 1, "Q2", null, false, null);
+            QuestionResponse r1 = new QuestionResponse(1, 1, "Q1", null, false, null, null, null);
+            QuestionResponse r2 = new QuestionResponse(2, 1, "Q2", null, false, null, null, null);
 
             given(questionRepository.findByChapter(1)).willReturn(List.of(q1, q2));
             given(questionMapper.toResponseList(List.of(q1, q2))).willReturn(List.of(r1, r2));
@@ -94,7 +94,7 @@ class QuestionServiceTest {
         @DisplayName("should return critical questions only")
         void shouldReturnCriticalQuestions() {
             Question q = Question.builder().id(5).isCritical(true).build();
-            QuestionResponse r = new QuestionResponse(5, 1, "Q5", null, true, null);
+            QuestionResponse r = new QuestionResponse(5, 1, "Q5", null, true, null, null, null);
 
             given(questionRepository.findByIsCriticalTrue()).willReturn(List.of(q));
             given(questionMapper.toResponseList(List.of(q))).willReturn(List.of(r));

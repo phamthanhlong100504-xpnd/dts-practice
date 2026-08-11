@@ -6,5 +6,7 @@ public record QuestionResponse(
         String questionText,
         Object options,
         Boolean isCritical,
-        String imageUrl
+        String imageUrl,
+        String correctAnswer,
+        String explanation
 ) {}
