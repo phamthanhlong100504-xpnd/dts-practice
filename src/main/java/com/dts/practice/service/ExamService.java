@@ -41,6 +41,7 @@ public class ExamService {
     private static final int REQUIRED_CORRECT_FOR_PASS = 21;
     private static final int CRITICAL_QUESTIONS_IN_EXAM = 1;
     private static final int LEADERBOARD_TOP_N = 20;
+    private static final int LEADERBOARD_WINDOW = 500;
 
     private final ExamRepository examRepository;
     private final ExamAnswerRepository examAnswerRepository;
@@ -73,6 +74,8 @@ public class ExamService {
         Exam exam = Exam.builder()
                 .userId(user.userId())
                 .username(user.username())
+                .fullName(request.fullName() != null && !request.fullName().isBlank()
+                        ? request.fullName() : user.username())
                 .examType(request.examType())
                 .questionIds(selectedIds)
                 .totalQuestions(totalQuestions)
@@ -238,18 +241,35 @@ public class ExamService {
             default -> Instant.EPOCH;
         };
 
-        List<Exam> topExams = examRepository.findByStatusAndModeAndCompletedAtAfterOrderByScoreDescCorrectCountDesc(
-                ExamStatus.COMPLETED, "EXAM", since, PageRequest.of(0, LEADERBOARD_TOP_N));
+        // Window large enough to yield LEADERBOARD_TOP_N distinct users after dedup.
+        List<Exam> candidates = examRepository.findLeaderboard(
+                ExamStatus.COMPLETED, "EXAM",
+                (examType != null && !examType.isBlank()) ? examType : null,
+                since, PageRequest.of(0, LEADERBOARD_WINDOW));
 
-        return topExams.stream()
-                .map(e -> new LeaderboardEntry(
-                        e.getUserId(),
-                        e.getUsername() != null && !e.getUsername().isBlank()
-                                ? e.getUsername()
-                                : (e.getUserId() != null ? "user_" + e.getUserId().toString().substring(0, 6) : "Thí sinh"),
-                        e.getExamType(), e.getScore(),
-                        e.getCorrectCount(), e.getTotalQuestions(), e.getCompletedAt()))
-                .toList();
+        // Candidates are sorted by (score desc, correctCount desc, completedAt asc),
+        // so the first occurrence of each userId is that user's best attempt.
+        // Dedup: one entry per user, tiebroken by earlier completion time.
+        List<LeaderboardEntry> result = new ArrayList<>();
+        Set<UUID> seen = new HashSet<>();
+        for (Exam e : candidates) {
+            if (seen.add(e.getUserId())) {
+                result.add(toLeaderboardEntry(e));
+                if (result.size() >= LEADERBOARD_TOP_N) break;
+            }
+        }
+        return result;
+    }
+
+    private LeaderboardEntry toLeaderboardEntry(Exam e) {
+        String displayName = e.getFullName() != null && !e.getFullName().isBlank()
+                ? e.getFullName()
+                : (e.getUsername() != null && !e.getUsername().isBlank()
+                        ? e.getUsername()
+                        : (e.getUserId() != null ? "user_" + e.getUserId().toString().substring(0, 6) : "Thí sinh"));
+        return new LeaderboardEntry(
+                e.getUserId(), e.getUsername(), displayName, e.getExamType(), e.getScore(),
+                e.getCorrectCount(), e.getTotalQuestions(), e.getCompletedAt());
     }
 
     // ==================== AUTO-FINISH EXPIRED EXAMS ====================
@@ -332,7 +352,7 @@ public class ExamService {
 
     // Inner record for leaderboard entry
     public record LeaderboardEntry(
-            UUID userId, String username, String examType, Integer score,
+            UUID userId, String username, String fullName, String examType, Integer score,
             Integer correctCount, Integer totalQuestions, Instant completedAt) {}
 }
 

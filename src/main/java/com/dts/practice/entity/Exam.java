@@ -31,6 +31,9 @@ public class Exam {
     @Column(name = "username", length = 100)
     private String username;
 
+    @Column(name = "full_name", length = 100)
+    private String fullName;
+
     @Column(name = "exam_type", nullable = false, length = 10)
     private String examType;
 

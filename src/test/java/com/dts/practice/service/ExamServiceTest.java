@@ -86,7 +86,7 @@ class ExamServiceTest {
         @Test
         @DisplayName("should create new exam session successfully")
         void shouldStartNewExam() {
-            StartExamRequest request = new StartExamRequest("A1", 3, 20, "EXAM");
+            StartExamRequest request = new StartExamRequest("A1", 3, 20, "EXAM", "Nguyen Van A");
 
             given(questionRepository.findRandomCriticalQuestions(1)).willReturn(List.of(question));
             given(questionRepository.findRandomNonCritical(2)).willReturn(List.of(
@@ -107,9 +107,27 @@ class ExamServiceTest {
         }
 
         @Test
+        @DisplayName("should denormalize full name into exam")
+        void shouldStoreFullName() {
+            StartExamRequest request = new StartExamRequest("A1", 3, 20, "EXAM", "Nguyen Van A");
+
+            given(questionRepository.findRandomCriticalQuestions(1)).willReturn(List.of(question));
+            given(questionRepository.findRandomNonCritical(2)).willReturn(List.of(
+                    Question.builder().id(2).chapter(1).build(),
+                    Question.builder().id(3).chapter(2).build()));
+            given(examRepository.save(any(Exam.class))).willReturn(exam);
+            given(questionRepository.findAllById(any())).willReturn(List.of(question));
+            given(questionMapper.toResponse(any())).willReturn(null);
+
+            examService.startExam(USER, request);
+
+            then(examRepository).should().save(argThat(e -> "Nguyen Van A".equals(e.getFullName())));
+        }
+
+        @Test
         @DisplayName("should reject invalid mode")
         void shouldRejectInvalidMode() {
-            StartExamRequest request = new StartExamRequest("A1", 3, 20, "INVALID");
+            StartExamRequest request = new StartExamRequest("A1", 3, 20, "INVALID", null);
 
             assertThatThrownBy(() -> examService.startExam(USER, request))
                     .isInstanceOf(BusinessException.class)
@@ -236,20 +254,74 @@ class ExamServiceTest {
     class GetLeaderboard {
 
         @Test
-        @DisplayName("should return top entries")
+        @DisplayName("should return top entries with full name")
         void shouldReturnLeaderboard() {
             exam.setStatus(ExamStatus.COMPLETED);
             exam.setScore(95);
             exam.setCorrectCount(23);
+            exam.setFullName("Nguyen Van A");
 
-            given(examRepository.findByStatusAndModeAndCompletedAtAfterOrderByScoreDescCorrectCountDesc(
-                    eq(ExamStatus.COMPLETED), eq("EXAM"), any(Instant.class), any()))
+            given(examRepository.findLeaderboard(
+                    eq(ExamStatus.COMPLETED), eq("EXAM"), eq("A1"), any(Instant.class), any()))
                     .willReturn(List.of(exam));
 
             List<ExamService.LeaderboardEntry> result = examService.getLeaderboard("A1", "all");
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).score()).isEqualTo(95);
+            assertThat(result.get(0).fullName()).isEqualTo("Nguyen Van A");
+            then(examRepository).should().findLeaderboard(
+                    eq(ExamStatus.COMPLETED), eq("EXAM"), eq("A1"), any(Instant.class), any());
+        }
+
+        @Test
+        @DisplayName("should fallback to username when full name is blank")
+        void shouldFallbackToUsername() {
+            exam.setStatus(ExamStatus.COMPLETED);
+            exam.setScore(80);
+            exam.setUsername("testuser");
+            exam.setFullName(null);
+
+            given(examRepository.findLeaderboard(
+                    eq(ExamStatus.COMPLETED), eq("EXAM"), eq("B2"), any(Instant.class), any()))
+                    .willReturn(List.of(exam));
+
+            List<ExamService.LeaderboardEntry> result = examService.getLeaderboard("B2", "all");
+
+            assertThat(result.get(0).fullName()).isEqualTo("testuser");
+        }
+
+        @Test
+        @DisplayName("should dedup: one entry per user, keep best attempt")
+        void shouldDedupByUser() {
+            UUID other = UUID.randomUUID();
+            Exam best = Exam.builder()
+                    .id(UUID.randomUUID()).userId(USER_ID).username("u1").fullName("User One")
+                    .examType("B2").mode("EXAM").status(ExamStatus.COMPLETED)
+                    .score(90).correctCount(22).totalQuestions(25).completedAt(Instant.parse("2026-08-12T10:00:00Z"))
+                    .build();
+            Exam worse = Exam.builder()
+                    .id(UUID.randomUUID()).userId(USER_ID).username("u1").fullName("User One")
+                    .examType("B2").mode("EXAM").status(ExamStatus.COMPLETED)
+                    .score(70).correctCount(18).totalQuestions(25).completedAt(Instant.parse("2026-08-12T11:00:00Z"))
+                    .build();
+            Exam otherBest = Exam.builder()
+                    .id(UUID.randomUUID()).userId(other).username("u2").fullName("User Two")
+                    .examType("B2").mode("EXAM").status(ExamStatus.COMPLETED)
+                    .score(85).correctCount(21).totalQuestions(25).completedAt(Instant.parse("2026-08-12T09:00:00Z"))
+                    .build();
+
+            // Sorted as the query returns: score desc, correctCount desc, completedAt asc
+            given(examRepository.findLeaderboard(
+                    eq(ExamStatus.COMPLETED), eq("EXAM"), eq("B2"), any(Instant.class), any()))
+                    .willReturn(List.of(best, otherBest, worse));
+
+            List<ExamService.LeaderboardEntry> result = examService.getLeaderboard("B2", "all");
+
+            assertThat(result).hasSize(2);
+            assertThat(result).extracting(ExamService.LeaderboardEntry::userId)
+                    .containsExactly(USER_ID, other);
+            assertThat(result.get(0).score()).isEqualTo(90); // best of USER_ID kept, worse dropped
         }
     }
 }
