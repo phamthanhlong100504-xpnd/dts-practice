@@ -30,7 +30,7 @@
           "",
           "if (!token || token === '' || token === 'undefined') {",
           "    console.log('[AUTO-LOGIN] Token chua co, dang tu dong login...');",
-          "    var identityUrl = pm.environment.get('identityBaseUrl') || 'http://103.75.182.249:8081';",
+          "    var identityUrl = pm.environment.get('identityBaseUrl') || 'http://localhost:8081';",
           "    var username = pm.environment.get('identityUsername') || 'testuser2';",
           "    var password = pm.environment.get('identityPassword') || 'Test@1234';",
           "",
