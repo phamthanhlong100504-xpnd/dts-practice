@@ -1,17 +1,17 @@
 {
   "id": "dts-practice-env-vps",
-  "name": "DTS Practice - VPS (103.75.182.249)",
+  "name": "DTS Practice - VPS",
   "values": [
     {
       "key": "practiceBaseUrl",
-      "value": "http://103.75.182.249:8083",
+      "value": "http://{{VPS_HOST}}:8083",
       "type": "default",
       "enabled": true,
       "description": "Practice Service URL tren VPS"
     },
     {
       "key": "identityBaseUrl",
-      "value": "http://103.75.182.249:8081",
+      "value": "http://{{VPS_HOST}}:8081",
       "type": "default",
       "enabled": true,
       "description": "Identity Service URL - dung de lay token"
