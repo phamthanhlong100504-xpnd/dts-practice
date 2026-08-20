@@ -8,6 +8,8 @@ on:
 permissions:
   contents: read
   packages: write
+  checks: write
+  pull-requests: write
 
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/practice-service
@@ -27,6 +29,17 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+
+      - name: Run Unit Tests
+        run: mvn clean test -B
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            **/surefire-reports/TEST-*.xml
+            **/failsafe-reports/TEST-*.xml
 
       - name: Build Jar
         run: mvn clean package -B -DskipTests
@@ -65,20 +78,25 @@ jobs:
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.2.2
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
+          envs: DB_PASSWORD,JWT_ACCESS_SECRET,GITHUB_TOKEN
           script: |
             docker network create dts-network || true
             cd ${{ env.DEPLOY_DIR }}
             mv -f docker-compose.prod.yml docker-compose.yml
-            cat << EOF > .env
-            GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}
-            EOF
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            export GITHUB_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+            sed -i "s/${GITHUB_OWNER}/$GITHUB_OWNER/g" docker-compose.yml
+            echo "GITHUB_REPOSITORY_OWNER=$GITHUB_OWNER" > .env
+            echo "DB_PASSWORD=$DB_PASSWORD" >> .env
+            echo "JWT_ACCESS_SECRET=$JWT_ACCESS_SECRET" >> .env
+            echo "$GITHUB_TOKEN" | docker login ghcr.io -u $GITHUB_OWNER --password-stdin
             docker compose pull
             docker compose up -d
             docker image prune -a -f

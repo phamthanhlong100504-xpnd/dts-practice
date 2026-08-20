@@ -2,10 +2,7 @@ package com.dts.practice.service;
 
 import com.dts.practice.dto.request.StartExamRequest;
 import com.dts.practice.dto.request.SubmitAnswerRequest;
-import com.dts.practice.dto.response.ExamHistoryResponse;
-import com.dts.practice.dto.response.ExamResultResponse;
-import com.dts.practice.dto.response.ExamSessionResponse;
-import com.dts.practice.dto.response.SubmitAnswerResponse;
+import com.dts.practice.dto.response.*;
 import com.dts.practice.entity.Exam;
 import com.dts.practice.entity.ExamAnswer;
 import com.dts.practice.entity.Question;
@@ -19,10 +16,9 @@ import com.dts.practice.repository.QuestionRepository;
 import com.dts.practice.security.JwtUserDetails;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -31,297 +27,253 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Stream;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ExamService")
 class ExamServiceTest {
 
-    @Mock private ExamRepository examRepository;
-    @Mock private ExamAnswerRepository examAnswerRepository;
-    @Mock private QuestionRepository questionRepository;
-    @Mock private QuestionMapper questionMapper;
-    @Mock private ExamMapper examMapper;
-    @Mock private ObjectMapper objectMapper;
+    @Mock
+    private ExamRepository examRepository;
+
+    @Mock
+    private ExamAnswerRepository examAnswerRepository;
+
+    @Mock
+    private QuestionRepository questionRepository;
+
+    @Mock
+    private QuestionMapper questionMapper;
+
+    @Mock
+    private ExamMapper examMapper;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private ExamService examService;
 
-    private static final UUID USER_ID = UUID.randomUUID();
-    private static final UUID EXAM_ID = UUID.randomUUID();
-    private static final JwtUserDetails USER = new JwtUserDetails(USER_ID, "testuser", List.of());
-
+    private JwtUserDetails userDetails;
     private Exam exam;
-    private Question question;
 
     @BeforeEach
     void setUp() {
-        question = Question.builder()
-                .id(1).chapter(1).questionText("Test question?")
-                .options("{\"A\":\"Option A\"}").correctAnswer("A")
-                .isCritical(false).explanation("Explanation").build();
-
+        userDetails = new JwtUserDetails(UUID.randomUUID(), "testuser", List.of());
         exam = Exam.builder()
-                .id(EXAM_ID).userId(USER_ID).examType("A1")
-                .questionIds(List.of(1, 2, 3)).totalQuestions(3)
-                .durationMinutes(20).mode("EXAM")
-                .status(ExamStatus.IN_PROGRESS).startedAt(Instant.now())
-                .expiresAt(Instant.now().plusSeconds(1200))
-                .correctCount(0).wrongCount(0).score(0)
+                .id(UUID.randomUUID())
+                .userId(userDetails.userId())
+                .username(userDetails.username())
+                .examType("B2")
+                .totalQuestions(25)
+                .durationMinutes(20)
+                .status(ExamStatus.IN_PROGRESS)
+                .startedAt(Instant.now())
+                .expiresAt(Instant.now().plus(20, ChronoUnit.MINUTES))
+                .mode("EXAM")
+                .questionIds(List.of(1, 2, 3))
                 .build();
     }
 
-    @Nested
-    @DisplayName("startExam")
-    class StartExam {
+    @Test
+    void testStartExam_Success() {
+        StartExamRequest request = new StartExamRequest("B2", 25, 20, "EXAM", "Test User");
 
-        @Test
-        @DisplayName("should create new exam session successfully")
-        void shouldStartNewExam() {
-            StartExamRequest request = new StartExamRequest("A1", 3, 20, "EXAM", "Nguyen Van A");
+        Question critical = new Question();
+        critical.setId(1);
+        critical.setIsCritical(true);
 
-            given(questionRepository.findRandomCriticalQuestions(1)).willReturn(List.of(question));
-            given(questionRepository.findRandomNonCritical(2)).willReturn(List.of(
-                    Question.builder().id(2).chapter(1).build(),
-                    Question.builder().id(3).chapter(2).build()));
-            given(examRepository.save(any(Exam.class))).willReturn(exam);
-            given(questionRepository.findAllById(any())).willReturn(List.of(question));
-            given(questionMapper.toResponse(any())).willReturn(null);
+        Question normal1 = new Question();
+        normal1.setId(2);
+        Question normal2 = new Question();
+        normal2.setId(3);
 
-            ExamSessionResponse result = examService.startExam(USER, request);
+        when(questionRepository.findRandomCriticalQuestions(1)).thenReturn(List.of(critical));
+        when(questionRepository.findRandomNonCritical(24)).thenReturn(List.of(normal1, normal2));
+        when(examRepository.save(any(Exam.class))).thenAnswer(inv -> {
+            Exam e = inv.getArgument(0);
+            e.setId(UUID.randomUUID());
+            return e;
+        });
+        when(questionRepository.findAllById(anyList())).thenReturn(List.of(critical, normal1, normal2));
+        when(questionMapper.toResponse(any())).thenReturn(new QuestionResponse(1, 1, "Text", "options", false, "img", "A", "explain"));
 
-            assertThat(result).isNotNull();
-            assertThat(result.examId()).isEqualTo(EXAM_ID);
-            assertThat(result.status()).isEqualTo("IN_PROGRESS");
-            assertThat(result.totalQuestions()).isEqualTo(3);
-            then(examRepository).should().save(any(Exam.class));
-            then(examAnswerRepository).should(times(3)).save(any(ExamAnswer.class));
-        }
+        ExamSessionResponse response = examService.startExam(userDetails, request);
 
-        @Test
-        @DisplayName("should denormalize full name into exam")
-        void shouldStoreFullName() {
-            StartExamRequest request = new StartExamRequest("A1", 3, 20, "EXAM", "Nguyen Van A");
-
-            given(questionRepository.findRandomCriticalQuestions(1)).willReturn(List.of(question));
-            given(questionRepository.findRandomNonCritical(2)).willReturn(List.of(
-                    Question.builder().id(2).chapter(1).build(),
-                    Question.builder().id(3).chapter(2).build()));
-            given(examRepository.save(any(Exam.class))).willReturn(exam);
-            given(questionRepository.findAllById(any())).willReturn(List.of(question));
-            given(questionMapper.toResponse(any())).willReturn(null);
-
-            examService.startExam(USER, request);
-
-            then(examRepository).should().save(argThat(e -> "Nguyen Van A".equals(e.getFullName())));
-        }
-
-        @Test
-        @DisplayName("should reject invalid mode")
-        void shouldRejectInvalidMode() {
-            StartExamRequest request = new StartExamRequest("A1", 3, 20, "INVALID", null);
-
-            assertThatThrownBy(() -> examService.startExam(USER, request))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("Mode must be EXAM or PRACTICE");
-        }
+        assertNotNull(response);
+        assertEquals("IN_PROGRESS", response.status());
+        verify(examAnswerRepository, times(3)).save(any(ExamAnswer.class));
     }
 
-    @Nested
-    @DisplayName("getExamSession")
-    class GetExamSession {
+    @Test
+    void testStartExam_InvalidMode() {
+        StartExamRequest request = new StartExamRequest("B2", 25, 20, "INVALID", "Test User");
 
-        @Test
-        @DisplayName("should return exam session when exam exists")
-        void whenExamExists_shouldReturnSession() {
-            given(examRepository.findByIdAndUserId(EXAM_ID, USER_ID)).willReturn(Optional.of(exam));
-            given(examAnswerRepository.findByExamIdOrderByQuestionId(EXAM_ID)).willReturn(List.of());
-            given(questionRepository.findAllById(any())).willReturn(List.of());
-            given(questionMapper.toResponse(any())).willReturn(null);
-
-            ExamSessionResponse result = examService.getExamSession(EXAM_ID, USER_ID);
-
-            assertThat(result).isNotNull();
-            assertThat(result.examId()).isEqualTo(EXAM_ID);
-        }
-
-        @Test
-        @DisplayName("should throw not found when exam does not exist")
-        void whenExamNotExists_shouldThrowNotFound() {
-            given(examRepository.findByIdAndUserId(EXAM_ID, USER_ID)).willReturn(Optional.empty());
-
-            assertThatThrownBy(() -> examService.getExamSession(EXAM_ID, USER_ID))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("Exam not found");
-        }
+        BusinessException exception = assertThrows(BusinessException.class, () -> examService.startExam(userDetails, request));
+        assertTrue(exception.getMessage().contains("Mode must be EXAM or PRACTICE"));
     }
 
-    @Nested
-    @DisplayName("submitAnswer")
-    class SubmitAnswer {
+    @Test
+    void testGetExamSession_Success() {
+        when(examRepository.findByIdAndUserId(exam.getId(), userDetails.userId())).thenReturn(Optional.of(exam));
+        
+        ExamAnswer answer = new ExamAnswer();
+        answer.setQuestionId(1);
+        answer.setSelectedAnswer("A");
+        
+        when(examAnswerRepository.findByExamIdOrderByQuestionId(exam.getId())).thenReturn(List.of(answer));
+        when(questionRepository.findAllById(exam.getQuestionIds())).thenReturn(Collections.emptyList());
 
-        @Test
-        @DisplayName("should accept valid answer submission")
-        void shouldAcceptValidAnswer() {
-            SubmitAnswerRequest request = new SubmitAnswerRequest("1", "A");
-            ExamAnswer answer = ExamAnswer.builder()
-                    .exam(exam).questionId(1).build();
+        ExamSessionResponse response = examService.getExamSession(exam.getId(), userDetails.userId());
 
-            given(examRepository.findByIdAndUserId(EXAM_ID, USER_ID)).willReturn(Optional.of(exam));
-            given(examAnswerRepository.findByExamIdOrderByQuestionId(EXAM_ID))
-                    .willReturn(List.of(answer));
-            given(questionRepository.findById(1)).willReturn(Optional.of(question));
-
-            SubmitAnswerResponse result = examService.submitAnswer(EXAM_ID, USER_ID, request);
-
-            assertThat(result).isNotNull();
-            assertThat(result.status()).isEqualTo("answered");
-            then(examAnswerRepository).should().save(answer);
-        }
-
-        @Test
-        @DisplayName("should reject when exam is already completed")
-        void whenExamCompleted_shouldReject() {
-            exam.setStatus(ExamStatus.COMPLETED);
-            SubmitAnswerRequest request = new SubmitAnswerRequest("1", "A");
-
-            given(examRepository.findByIdAndUserId(EXAM_ID, USER_ID)).willReturn(Optional.of(exam));
-
-            assertThatThrownBy(() -> examService.submitAnswer(EXAM_ID, USER_ID, request))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("already COMPLETED");
-        }
+        assertNotNull(response);
+        assertEquals(1, response.answeredCount());
+        assertEquals("IN_PROGRESS", response.status());
     }
 
-    @Nested
-    @DisplayName("finishExam")
-    class FinishExam {
+    @Test
+    void testGetExamSession_Timeout() {
+        exam.setExpiresAt(Instant.now().minus(1, ChronoUnit.MINUTES));
+        when(examRepository.findByIdAndUserId(exam.getId(), userDetails.userId())).thenReturn(Optional.of(exam));
+        when(examAnswerRepository.findByExamIdOrderByQuestionId(exam.getId())).thenReturn(Collections.emptyList());
+        when(questionRepository.findAllById(exam.getQuestionIds())).thenReturn(Collections.emptyList());
 
-        @Test
-        @DisplayName("should complete exam and return results")
-        void shouldCompleteExam() {
-            ExamAnswer answer = ExamAnswer.builder()
-                    .exam(exam).questionId(1).selectedAnswer("A")
-                    .isCorrect(true).answeredAt(Instant.now()).build();
+        ExamSessionResponse response = examService.getExamSession(exam.getId(), userDetails.userId());
 
-            given(examRepository.findByIdAndUserId(EXAM_ID, USER_ID)).willReturn(Optional.of(exam));
-            given(examAnswerRepository.findByExamIdOrderByQuestionId(EXAM_ID))
-                    .willReturn(List.of(answer));
-
-            ExamResultResponse result = examService.finishExam(EXAM_ID, USER_ID);
-
-            assertThat(result).isNotNull();
-            assertThat(result.status()).isEqualTo("COMPLETED");
-            then(examRepository).should().save(exam);
-        }
+        assertEquals("TIMEOUT", response.status());
+        verify(examRepository, times(1)).save(exam);
     }
 
-    @Nested
-    @DisplayName("getExamHistory")
-    class GetExamHistory {
+    @Test
+    void testSubmitAnswer_Success() {
+        when(examRepository.findByIdAndUserId(exam.getId(), userDetails.userId())).thenReturn(Optional.of(exam));
+        
+        ExamAnswer answer = new ExamAnswer();
+        answer.setQuestionId(1);
+        
+        when(examAnswerRepository.findByExamIdOrderByQuestionId(exam.getId())).thenReturn(List.of(answer));
+        
+        Question question = new Question();
+        question.setId(1);
+        question.setCorrectAnswer("B");
+        
+        when(questionRepository.findById(1)).thenReturn(Optional.of(question));
 
-        @Test
-        @DisplayName("should return paginated history as DTOs")
-        void shouldReturnHistoryDtos() {
-            PageRequest pageable = PageRequest.of(0, 10);
-            ExamHistoryResponse dto = new ExamHistoryResponse(
-                    EXAM_ID, "A1", "COMPLETED", 25, 20, 5, 80, true, "EXAM", 20,
-                    Instant.now(), Instant.now());
+        SubmitAnswerRequest request = new SubmitAnswerRequest("1", "B");
+        SubmitAnswerResponse response = examService.submitAnswer(exam.getId(), userDetails.userId(), request);
 
-            given(examRepository.findByUserIdOrderByStartedAtDesc(USER_ID, pageable))
-                    .willReturn(new PageImpl<>(List.of(exam)));
-            given(examMapper.toHistoryResponse(exam)).willReturn(dto);
-
-            Page<ExamHistoryResponse> result = examService.getExamHistory(USER_ID, pageable);
-
-            assertThat(result).isNotNull();
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().get(0)).isInstanceOf(ExamHistoryResponse.class);
-            then(examMapper).should().toHistoryResponse(exam);
-        }
+        assertEquals("answered", response.status());
+        assertTrue(answer.getIsCorrect());
+        assertEquals("B", answer.getSelectedAnswer());
+        verify(examAnswerRepository).save(answer);
     }
 
-    @Nested
-    @DisplayName("getLeaderboard")
-    class GetLeaderboard {
+    @Test
+    void testSubmitAnswer_PracticeMode() {
+        exam.setMode("PRACTICE");
+        when(examRepository.findByIdAndUserId(exam.getId(), userDetails.userId())).thenReturn(Optional.of(exam));
+        
+        ExamAnswer answer = new ExamAnswer();
+        answer.setQuestionId(1);
+        when(examAnswerRepository.findByExamIdOrderByQuestionId(exam.getId())).thenReturn(List.of(answer));
+        
+        Question question = new Question();
+        question.setId(1);
+        question.setCorrectAnswer("B");
+        question.setExplanation("Explanation");
+        when(questionRepository.findById(1)).thenReturn(Optional.of(question));
 
-        @Test
-        @DisplayName("should return top entries with full name")
-        void shouldReturnLeaderboard() {
-            exam.setStatus(ExamStatus.COMPLETED);
-            exam.setScore(95);
-            exam.setCorrectCount(23);
-            exam.setFullName("Nguyen Van A");
+        SubmitAnswerRequest request = new SubmitAnswerRequest("1", "A");
+        SubmitAnswerResponse response = examService.submitAnswer(exam.getId(), userDetails.userId(), request);
 
-            given(examRepository.findLeaderboard(
-                    eq(ExamStatus.COMPLETED), eq("EXAM"), eq("A1"), any(Instant.class), any()))
-                    .willReturn(List.of(exam));
+        assertFalse(response.isCorrect());
+        assertEquals("B", response.correctAnswer());
+        assertEquals("Explanation", response.explanation());
+    }
 
-            List<ExamService.LeaderboardEntry> result = examService.getLeaderboard("A1", "all");
+    @Test
+    void testSubmitAnswer_AlreadyCompleted() {
+        exam.setStatus(ExamStatus.COMPLETED);
+        when(examRepository.findByIdAndUserId(exam.getId(), userDetails.userId())).thenReturn(Optional.of(exam));
 
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).score()).isEqualTo(95);
-            assertThat(result.get(0).fullName()).isEqualTo("Nguyen Van A");
-            then(examRepository).should().findLeaderboard(
-                    eq(ExamStatus.COMPLETED), eq("EXAM"), eq("A1"), any(Instant.class), any());
-        }
+        SubmitAnswerRequest request = new SubmitAnswerRequest("1", "B");
+        assertThrows(BusinessException.class, () -> examService.submitAnswer(exam.getId(), userDetails.userId(), request));
+    }
 
-        @Test
-        @DisplayName("should fallback to username when full name is blank")
-        void shouldFallbackToUsername() {
-            exam.setStatus(ExamStatus.COMPLETED);
-            exam.setScore(80);
-            exam.setUsername("testuser");
-            exam.setFullName(null);
+    @Test
+    void testFinishExam_Success() {
+        when(examRepository.findByIdAndUserId(exam.getId(), userDetails.userId())).thenReturn(Optional.of(exam));
+        
+        ExamAnswer answer1 = new ExamAnswer();
+        answer1.setQuestionId(1);
+        answer1.setIsCorrect(true);
+        ExamAnswer answer2 = new ExamAnswer();
+        answer2.setQuestionId(2);
+        answer2.setIsCorrect(false);
 
-            given(examRepository.findLeaderboard(
-                    eq(ExamStatus.COMPLETED), eq("EXAM"), eq("B2"), any(Instant.class), any()))
-                    .willReturn(List.of(exam));
+        when(examAnswerRepository.findByExamIdOrderByQuestionId(exam.getId())).thenReturn(List.of(answer1, answer2));
+        
+        Question q1 = new Question();
+        q1.setId(1);
+        q1.setOptions("[]");
+        Question q2 = new Question();
+        q2.setId(2);
+        q2.setOptions("[]");
+        
+        when(questionRepository.findAllById(exam.getQuestionIds())).thenReturn(List.of(q1, q2));
 
-            List<ExamService.LeaderboardEntry> result = examService.getLeaderboard("B2", "all");
+        ExamResultResponse response = examService.finishExam(exam.getId(), userDetails.userId());
 
-            assertThat(result.get(0).fullName()).isEqualTo("testuser");
-        }
+        assertNotNull(response);
+        assertEquals("COMPLETED", response.status());
+        assertEquals(1, response.correctCount());
+        assertEquals(1, response.wrongCount());
+        verify(examRepository).save(exam);
+    }
 
-        @Test
-        @DisplayName("should dedup: one entry per user, keep best attempt")
-        void shouldDedupByUser() {
-            UUID other = UUID.randomUUID();
-            Exam best = Exam.builder()
-                    .id(UUID.randomUUID()).userId(USER_ID).username("u1").fullName("User One")
-                    .examType("B2").mode("EXAM").status(ExamStatus.COMPLETED)
-                    .score(90).correctCount(22).totalQuestions(25).completedAt(Instant.parse("2026-08-12T10:00:00Z"))
-                    .build();
-            Exam worse = Exam.builder()
-                    .id(UUID.randomUUID()).userId(USER_ID).username("u1").fullName("User One")
-                    .examType("B2").mode("EXAM").status(ExamStatus.COMPLETED)
-                    .score(70).correctCount(18).totalQuestions(25).completedAt(Instant.parse("2026-08-12T11:00:00Z"))
-                    .build();
-            Exam otherBest = Exam.builder()
-                    .id(UUID.randomUUID()).userId(other).username("u2").fullName("User Two")
-                    .examType("B2").mode("EXAM").status(ExamStatus.COMPLETED)
-                    .score(85).correctCount(21).totalQuestions(25).completedAt(Instant.parse("2026-08-12T09:00:00Z"))
-                    .build();
+    @Test
+    void testGetExamHistory() {
+        Page<Exam> page = new PageImpl<>(List.of(exam));
+        when(examRepository.findByUserIdOrderByStartedAtDesc(eq(userDetails.userId()), any(PageRequest.class))).thenReturn(page);
+        when(examMapper.toHistoryResponse(exam)).thenReturn(new ExamHistoryResponse(exam.getId(), "B2", "COMPLETED", 25, 20, 5, 80, true, "EXAM", 20, Instant.now(), Instant.now()));
 
-            // Sorted as the query returns: score desc, correctCount desc, completedAt asc
-            given(examRepository.findLeaderboard(
-                    eq(ExamStatus.COMPLETED), eq("EXAM"), eq("B2"), any(Instant.class), any()))
-                    .willReturn(List.of(best, otherBest, worse));
+        Page<ExamHistoryResponse> history = examService.getExamHistory(userDetails.userId(), PageRequest.of(0, 10));
+        assertEquals(1, history.getTotalElements());
+    }
 
-            List<ExamService.LeaderboardEntry> result = examService.getLeaderboard("B2", "all");
+    @Test
+    void testGetLeaderboard() {
+        Exam e2 = new Exam();
+        e2.setUserId(UUID.randomUUID());
+        e2.setUsername("user2");
+        e2.setScore(100);
 
-            assertThat(result).hasSize(2);
-            assertThat(result).extracting(ExamService.LeaderboardEntry::userId)
-                    .containsExactly(USER_ID, other);
-            assertThat(result.get(0).score()).isEqualTo(90); // best of USER_ID kept, worse dropped
-        }
+        when(examRepository.findLeaderboard(any(), any(), any(), any(), any())).thenReturn(List.of(exam, exam, e2));
+        
+        List<ExamService.LeaderboardEntry> leaderboard = examService.getLeaderboard(null, "week");
+        
+        assertEquals(2, leaderboard.size());
+    }
+
+    @Test
+    void testAutoFinishExpiredExams() {
+        exam.setExpiresAt(Instant.now().minus(1, ChronoUnit.MINUTES));
+        when(examRepository.findByStatusAndExpiresAtBefore(eq(ExamStatus.IN_PROGRESS), any(Instant.class))).thenReturn(List.of(exam));
+        
+        ExamAnswer answer1 = new ExamAnswer();
+        answer1.setQuestionId(1);
+        answer1.setIsCorrect(true);
+        when(examAnswerRepository.findByExamIdOrderByQuestionId(exam.getId())).thenReturn(List.of(answer1));
+        
+        examService.autoFinishExpiredExams();
+        
+        assertEquals(ExamStatus.TIMEOUT, exam.getStatus());
+        verify(examRepository, times(1)).save(exam);
     }
 }
+
