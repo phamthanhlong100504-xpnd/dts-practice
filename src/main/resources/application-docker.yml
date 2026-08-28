@@ -11,13 +11,13 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
     listener:
-      auto-startup: ${SPRING_KAFKA_LISTENER_AUTO_STARTUP:false}
+      auto-startup: ${SPRING_KAFKA_LISTENER_AUTO_STARTUP:true}
     consumer:
       group-id: practice-service-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "com.dts.identity.*,java.util,java.lang"
+        spring.json.trusted.packages: "com.dts.identity.*,com.dts.practice.dto.event,java.util,java.lang"
 
 server:
   port: ${SERVER_PORT:8087}

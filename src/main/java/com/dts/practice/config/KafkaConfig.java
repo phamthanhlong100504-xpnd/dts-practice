@@ -33,8 +33,8 @@ public class KafkaConfig {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.dts.identity.*,com.dts.practice.dto.event,java.util,java.lang");
-        props.put(JsonDeserializer.TYPE_MAPPINGS,
-                "com.dts.identity.event.UserEvent:com.dts.practice.dto.event.UserEvent");
+        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "com.dts.practice.dto.event.UserEvent");
         return new DefaultKafkaConsumerFactory<>(props);
     }
 

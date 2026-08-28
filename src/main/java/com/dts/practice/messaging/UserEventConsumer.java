@@ -37,8 +37,7 @@ public class UserEventConsumer {
     );
 
     @KafkaListener(topics = "${spring.kafka.topics.user-events:user-events}",
-            groupId = "#{T(java.util.UUID).randomUUID().toString()}",
-            autoStartup = "${spring.kafka.listener.auto-startup:false}")
+            groupId = "${spring.kafka.consumer.group-id}")
     public void onUserEvent(@Payload(required = false) UserEvent event) {
         if (event == null) {
             log.warn("Received null event, skipping");
@@ -64,8 +63,8 @@ public class UserEventConsumer {
                 eventType, userId, event.getUsername());
 
         switch (eventType) {
-            case "USER_REGISTERED":
-                handleUserRegistered(userId, event.getUsername());
+            case "USER_CREATED":
+                handleUserCreated(userId, event.getUsername());
                 break;
             case "USER_UPDATED":
                 handleUserUpdated(userId, event.getUsername());
@@ -78,8 +77,8 @@ public class UserEventConsumer {
         }
     }
 
-    private void handleUserRegistered(String userId, String username) {
-        log.info("User registered: userId={}, username={}", userId, username);
+    private void handleUserCreated(String userId, String username) {
+        log.info("User created: userId={}, username={}", userId, username);
     }
 
     private void handleUserUpdated(String userId, String username) {
