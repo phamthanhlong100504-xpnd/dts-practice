@@ -7,6 +7,7 @@ import com.dts.practice.mapper.QuestionMapper;
 import com.dts.practice.repository.QuestionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,8 +22,9 @@ public class QuestionService {
     private final QuestionRepository questionRepository;
     private final QuestionMapper questionMapper;
 
-    public List<QuestionResponse> getByChapter(Integer chapter) {
-        return questionMapper.toResponseList(questionRepository.findByChapter(chapter));
+    @Cacheable(value = "questions", key = "#chapterId")
+    public List<QuestionResponse> getByChapter(Integer chapterId) {
+        return questionMapper.toResponseList(questionRepository.findByChapter(chapterId));
     }
 
     public QuestionResponse getById(Integer id) {

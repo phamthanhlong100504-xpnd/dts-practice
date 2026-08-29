@@ -18,6 +18,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -186,6 +188,7 @@ public class ExamService {
 
     // ==================== FINISH EXAM ====================
 
+    @CacheEvict(value = "leaderboard", allEntries = true)
     public ExamResultResponse finishExam(UUID examId, UUID userId) {
         Exam exam = examRepository.findByIdAndUserId(examId, userId)
                 .orElseThrow(() -> BusinessException.notFound("Exam not found"));
@@ -234,6 +237,7 @@ public class ExamService {
     // ==================== LEADERBOARD ====================
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "leaderboard", key = "'lb:' + (#examType != null ? #examType : 'all') + ':' + (#period != null ? #period : 'all')")
     public List<LeaderboardEntry> getLeaderboard(String examType, String period) {
         Instant since = switch (period != null ? period.toLowerCase() : "all") {
             case "week" -> Instant.now().minus(7, ChronoUnit.DAYS);
