@@ -1,4 +1,4 @@
-﻿package com.dts.practice.messaging;
+package com.dts.practice.messaging;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

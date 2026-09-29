@@ -1,4 +1,4 @@
-﻿package com.dts.practice.config;
+package com.dts.practice.config;
 
 import com.dts.practice.messaging.RedisMessageSubscriber;
 import org.springframework.context.annotation.Bean;
