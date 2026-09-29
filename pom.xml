@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -15,7 +15,7 @@
     <artifactId>practice-service</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <name>DTS Practice Service</name>
-    <description>Practice Service - Thi thử sát hạch lái xe, tích hợp với Identity Service</description>
+    <description>Practice Service - Thi thá»­ sÃ¡t háº¡ch lÃ¡i xe, tÃ­ch há»£p vá»›i Identity Service</description>
 
     <properties>
         <java.version>21</java.version>
@@ -102,13 +102,13 @@
             <version>3.7.5</version>
         </dependency>
 
-        <!-- Kafka (nhận event từ identity-service: user sync) -->
+        <!-- Kafka (nháº­n event tá»« identity-service: user sync) -->
         <dependency>
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
-        <!-- JWT (dùng để validate token từ identity-service) -->
+        <!-- JWT (dÃ¹ng Ä‘á»ƒ validate token tá»« identity-service) -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
@@ -175,6 +175,18 @@
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
         </dependency>
     </dependencies>
 
