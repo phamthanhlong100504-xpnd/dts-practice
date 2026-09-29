@@ -1,4 +1,9 @@
-spring:
+﻿spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
   main:
     lazy-initialization: true
   jmx:
@@ -107,3 +112,4 @@ eureka:
     enabled: ${EUREKA_ENABLED:true}
   instance:
     prefer-ip-address: true
+
