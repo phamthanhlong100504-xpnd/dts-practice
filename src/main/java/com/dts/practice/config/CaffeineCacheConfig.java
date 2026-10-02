@@ -17,10 +17,29 @@ public class CaffeineCacheConfig {
 
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager(USER_PROGRAMS_CACHE);
+        CaffeineCacheManager cacheManager =
+                new CaffeineCacheManager(USER_PROGRAMS_CACHE);
+
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .expireAfterWrite(30, TimeUnit.MINUTES)
                 .maximumSize(5000));
+
+        cacheManager.registerCustomCache(
+                "questions",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(15, TimeUnit.MINUTES)
+                        .maximumSize(5000)
+                        .build()
+        );
+
+        cacheManager.registerCustomCache(
+                "leaderboard",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(5, TimeUnit.MINUTES)
+                        .maximumSize(5000)
+                        .build()
+        );
+
         return cacheManager;
     }
 }

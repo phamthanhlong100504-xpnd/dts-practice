@@ -31,19 +31,55 @@ import java.util.UUID;
 public class JwtValidationFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
+
     private final SecretKey accessKey;
     private final String issuer;
 
     public JwtValidationFilter(JwtValidationProperties props) {
-        this.accessKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(props.accessSecret()));
+        this.accessKey = Keys.hmacShaKeyFor(decodeSecret(props.accessSecret()));
         this.issuer = props.issuer();
+    }
+
+    // Giữ cùng quy tắc giải mã với Identity JwtProvider.
+    private static byte[] decodeSecret(String secret) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalArgumentException("JWT secret must not be empty");
+        }
+
+        byte[] bytes;
+        try {
+            bytes = Decoders.BASE64.decode(secret);
+        } catch (Exception e1) {
+            try {
+                bytes = Decoders.BASE64URL.decode(secret);
+            } catch (Exception e2) {
+                bytes = secret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            }
+        }
+
+        if (bytes.length < 32) {
+            try {
+                java.security.MessageDigest sha256 =
+                        java.security.MessageDigest.getInstance("SHA-256");
+                bytes = sha256.digest(bytes);
+            } catch (java.security.NoSuchAlgorithmException e) {
+                byte[] padded = new byte[32];
+                for (int i = 0; i < 32; i++) {
+                    padded[i] = bytes[i % bytes.length];
+                }
+                bytes = padded;
+            }
+        }
+
+        return bytes;
     }
 
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain) throws ServletException, IOException {
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
 
         String token = extractToken(request);
         if (token == null) {
@@ -66,19 +102,31 @@ public class JwtValidationFilter extends OncePerRequestFilter {
 
             List<SimpleGrantedAuthority> authorities = new ArrayList<>();
             if (roles != null) {
-                roles.forEach(r -> authorities.add(new SimpleGrantedAuthority(r)));
+                roles.forEach(role ->
+                        authorities.add(new SimpleGrantedAuthority(role)));
             }
             if (permissions != null) {
-                permissions.forEach(p -> authorities.add(new SimpleGrantedAuthority("PERM_" + p)));
+                permissions.forEach(permission ->
+                        authorities.add(
+                                new SimpleGrantedAuthority(
+                                        "PERM_" + permission
+                                )
+                        ));
             }
 
-            JwtUserDetails userDetails = new JwtUserDetails(userId, username, authorities);
+            JwtUserDetails userDetails =
+                    new JwtUserDetails(userId, username, authorities);
 
             UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails, null, authorities
+                    );
+            authentication.setDetails(
+                    new WebAuthenticationDetailsSource().buildDetails(request)
+            );
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            SecurityContextHolder.getContext()
+                    .setAuthentication(authentication);
         } catch (Exception e) {
             log.debug("JWT validation failed: {}", e.getMessage());
         }
@@ -88,7 +136,8 @@ public class JwtValidationFilter extends OncePerRequestFilter {
 
     private String extractToken(HttpServletRequest request) {
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (StringUtils.hasText(header) && header.startsWith(BEARER_PREFIX)) {
+        if (StringUtils.hasText(header)
+                && header.startsWith(BEARER_PREFIX)) {
             return header.substring(BEARER_PREFIX.length());
         }
         return null;

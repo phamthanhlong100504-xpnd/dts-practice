@@ -36,7 +36,11 @@ public class Exam {
 
     @Column(name = "exam_type", nullable = false, length = 10)
     private String examType;
+    @Column(name = "bank_version", nullable = false, length = 64)
+    private String bankVersion;
 
+    @Column(name = "critical_question_id")
+    private Integer criticalQuestionId;
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "question_ids")
     private List<Integer> questionIds;
