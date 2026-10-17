@@ -1,0 +1,6 @@
+# Preserve existing reviewed migration, manifest and fixture bytes on every OS.
+src/main/resources/db/migration/*.sql -text
+src/test/resources/traffic-signs-screen10-real.json -text
+src/test/resources/memory-tips-screen11-real.json -text
+data/preset-exams/2026/sets.json -text
+/.mvn/wrapper/maven-wrapper.jar -text

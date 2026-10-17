@@ -44,3 +44,11 @@ temp/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Archived local handoffs and Python bytecode are not application source.
+/handoff/
+__pycache__/
+*.py[cod]
+
+# Keep the existing Maven bootstrap JAR (exception must follow *.jar).
+!/.mvn/wrapper/maven-wrapper.jar
