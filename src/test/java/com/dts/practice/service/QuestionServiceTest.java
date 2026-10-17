@@ -21,6 +21,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class QuestionServiceTest {
 
+    private static final String BANK = "dts-2026-600-v1";
+
     @Mock
     private QuestionRepository questionRepository;
 
@@ -39,14 +41,29 @@ class QuestionServiceTest {
         question.setId(1);
         question.setChapter(1);
         question.setIsCritical(true);
-        
-        questionResponse = new QuestionResponse(1, 1, "Question text", "options", true, "imageUrl", "C", "explain");
+
+        questionResponse = new QuestionResponse(
+                1,
+                1,
+                "Question text",
+                "options",
+                true,
+                "imageUrl",
+                null,
+                "C",
+                "explain"
+        );
     }
 
     @Test
     void testGetByChapter() {
-        when(questionRepository.findByChapter(1)).thenReturn(List.of(question));
-        when(questionMapper.toResponseList(List.of(question))).thenReturn(List.of(questionResponse));
+        when(questionRepository
+                .findByBankVersionAndChapterOrderBySourceQuestionIdAsc(
+                        BANK, 1
+                ))
+                .thenReturn(List.of(question));
+        when(questionMapper.toResponseList(List.of(question)))
+                .thenReturn(List.of(questionResponse));
 
         List<QuestionResponse> result = questionService.getByChapter(1);
 
@@ -55,9 +72,33 @@ class QuestionServiceTest {
     }
 
     @Test
-    void testGetById_Success() {
-        when(questionRepository.findById(1)).thenReturn(Optional.of(question));
-        when(questionMapper.toResponse(question)).thenReturn(questionResponse);
+    void testGetByChapterForLicenseUsesLicenseCriticalFlag() {
+        when(questionRepository
+                .findByBankVersionAndChapterAndLicenseClass(
+                        BANK, 1, "A1"
+                ))
+                .thenReturn(List.of(question));
+        when(questionMapper.toResponseList(List.of(question)))
+                .thenReturn(List.of(questionResponse));
+        when(questionRepository
+                .findCriticalByBankVersionAndLicenseClass(
+                        BANK, "A1"
+                ))
+                .thenReturn(List.of());
+
+        List<QuestionResponse> result =
+                questionService.getByChapter(1, "a1");
+
+        assertEquals(1, result.size());
+        assertFalse(result.get(0).isCritical());
+    }
+
+    @Test
+    void testGetByIdSuccess() {
+        when(questionRepository.findById(1))
+                .thenReturn(Optional.of(question));
+        when(questionMapper.toResponse(question))
+                .thenReturn(questionResponse);
 
         QuestionResponse result = questionService.getById(1);
 
@@ -66,18 +107,44 @@ class QuestionServiceTest {
     }
 
     @Test
-    void testGetById_NotFound() {
-        when(questionRepository.findById(2)).thenReturn(Optional.empty());
+    void testGetByIdNotFound() {
+        when(questionRepository.findById(2))
+                .thenReturn(Optional.empty());
 
-        assertThrows(BusinessException.class, () -> questionService.getById(2));
+        assertThrows(
+                BusinessException.class,
+                () -> questionService.getById(2)
+        );
+    }
+
+    @Test
+    void testGetByIdNotApplicableToLicense() {
+        when(questionRepository.findById(1))
+                .thenReturn(Optional.of(question));
+        when(questionMapper.toResponse(question))
+                .thenReturn(questionResponse);
+        when(questionRepository.findCriticalFlagForLicense(
+                1, BANK, "A1"
+        )).thenReturn(Optional.empty());
+
+        assertThrows(
+                BusinessException.class,
+                () -> questionService.getById(1, "A1")
+        );
     }
 
     @Test
     void testGetCriticalQuestions() {
-        when(questionRepository.findByIsCriticalTrue()).thenReturn(List.of(question));
-        when(questionMapper.toResponseList(List.of(question))).thenReturn(List.of(questionResponse));
+        when(questionRepository
+                .findByBankVersionAndIsCriticalTrueOrderBySourceQuestionIdAsc(
+                        BANK
+                ))
+                .thenReturn(List.of(question));
+        when(questionMapper.toResponseList(List.of(question)))
+                .thenReturn(List.of(questionResponse));
 
-        List<QuestionResponse> result = questionService.getCriticalQuestions();
+        List<QuestionResponse> result =
+                questionService.getCriticalQuestions();
 
         assertEquals(1, result.size());
         assertTrue(result.get(0).isCritical());
@@ -85,14 +152,25 @@ class QuestionServiceTest {
 
     @Test
     void testCountAll() {
-        when(questionRepository.count()).thenReturn(100L);
-        assertEquals(100L, questionService.countAll());
+        when(questionRepository.countByBankVersion(BANK))
+                .thenReturn(600L);
+
+        assertEquals(600L, questionService.countAll());
     }
 
     @Test
     void testCountByChapter() {
-        when(questionRepository.countByChapter(1)).thenReturn(20L);
-        assertEquals(20L, questionService.countByChapter(1));
+        when(questionRepository.countByBankVersionAndChapter(BANK, 1))
+                .thenReturn(180L);
+
+        assertEquals(180L, questionService.countByChapter(1));
+    }
+
+    @Test
+    void testInvalidLicenseClass() {
+        assertThrows(
+                BusinessException.class,
+                () -> questionService.countAll("B2")
+        );
     }
 }
-

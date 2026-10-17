@@ -18,5 +18,7 @@ public record ExamResultResponse(
         Integer durationMinutes,
         List<Map<String, Object>> answers,
         Instant startedAt,
-        Instant completedAt
+        Instant completedAt,
+        Integer answeredWrongCount,
+        Integer unansweredCount
 ) {}

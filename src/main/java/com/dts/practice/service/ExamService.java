@@ -15,6 +15,7 @@ import com.dts.practice.repository.ExamRepository;
 import com.dts.practice.repository.QuestionRepository;
 import com.dts.practice.security.JwtUserDetails;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +24,14 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,7 +42,9 @@ import java.util.stream.Collectors;
 @Transactional
 public class ExamService {
 
-    private static final String CURRENT_BANK = "dts-2026-600-v1";
+    private static final String CURRENT_BANK = CurrentQuestionBank.currentVersion();
+    private static final String ACTIVE_INDEX =
+            "uq_exams_one_active_per_user_license";
     private static final int LEGACY_REQUIRED_CORRECT = 21;
     private static final int LEADERBOARD_TOP_N = 20;
     private static final int LEADERBOARD_WINDOW = 500;
@@ -49,7 +55,8 @@ public class ExamService {
     private final QuestionMapper questionMapper;
     private final ExamMapper examMapper;
     private final ObjectMapper objectMapper;
-
+    private final WrongQuestionProgressService wrongQuestionProgressService;
+    private final ExamProgressReceiptService examProgressReceiptService;
     // ==================== START EXAM ====================
 
     public ExamSessionResponse startExam(
@@ -83,6 +90,17 @@ public class ExamService {
                             + rule.totalQuestions() + " câu và "
                             + rule.durationMinutes() + " phút."
             );
+        }
+
+        boolean hasActiveExam = examRepository
+                .existsByUserIdAndExamTypeAndStatusIn(
+                        user.userId(),
+                        licenseClass,
+                        List.of(ExamStatus.IN_PROGRESS, ExamStatus.PAUSED)
+                );
+
+        if (hasActiveExam) {
+            throw activeExamExists(licenseClass);
         }
 
         List<Question> criticalQuestions =
@@ -148,6 +166,7 @@ public class ExamService {
                 .bankVersion(CURRENT_BANK)
                 .criticalQuestionId(criticalQuestionId)
                 .questionIds(selectedIds)
+                .currentQuestionId(selectedIds.get(0))
                 .totalQuestions(rule.totalQuestions())
                 .durationMinutes(rule.durationMinutes())
                 .expiresAt(
@@ -161,7 +180,15 @@ public class ExamService {
                 .startedAt(now)
                 .build();
 
-        exam = examRepository.save(exam);
+        try {
+            exam = examRepository.save(exam);
+            examRepository.flush();
+        } catch (DataIntegrityViolationException error) {
+            if (isActiveIndexViolation(error)) {
+                throw activeExamExists(licenseClass);
+            }
+            throw error;
+        }
 
         for (Integer questionId : selectedIds) {
             examAnswerRepository.save(
@@ -199,8 +226,37 @@ public class ExamService {
                 exam.getExpiresAt(),
                 exam.getMode(),
                 responses,
-                exam.getStartedAt()
+                exam.getStartedAt(),
+                Map.of(),
+                remainingTimeMs(exam),
+                exam.getCurrentQuestionId()
         );
+    }
+
+    private BusinessException activeExamExists(String licenseClass) {
+        return BusinessException.of(
+                "ACTIVE_EXAM_EXISTS",
+                "Bạn đang có một bài " + licenseClass + " chưa hoàn thành.",
+                HttpStatus.CONFLICT
+        );
+    }
+
+    private boolean isActiveIndexViolation(Throwable error) {
+        Throwable cause = error;
+
+        while (cause != null) {
+            if (cause instanceof org.hibernate.exception.ConstraintViolationException
+                    constraint
+                    && ACTIVE_INDEX.equals(constraint.getConstraintName())) {
+                return true;
+            }
+            if (cause.getMessage() != null
+                    && cause.getMessage().contains(ACTIVE_INDEX)) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 
     // ==================== GET SESSION ====================
@@ -209,7 +265,7 @@ public class ExamService {
             UUID examId,
             UUID userId
     ) {
-        Exam exam = examRepository.findByIdAndUserId(examId, userId)
+        Exam exam = examRepository.findByIdAndUserIdForUpdate(examId, userId)
                 .orElseThrow(
                         () -> BusinessException.notFound(
                                 "Exam not found"
@@ -221,15 +277,112 @@ public class ExamService {
             finishTimeout(exam);
         }
 
+        return buildSession(exam);
+    }
+
+    @Transactional
+    public ExamSessionResponse pauseExam(
+            UUID examId,
+            UUID userId,
+            Integer currentQuestionId
+    ) {
+        Exam exam = examRepository.findByIdAndUserIdForUpdate(examId, userId)
+                .orElseThrow(() -> BusinessException.notFound("Exam not found"));
+
+        if (exam.getStatus() == ExamStatus.PAUSED) {
+            return buildSession(exam);
+        }
+        if (exam.getStatus() != ExamStatus.IN_PROGRESS) {
+            throw BusinessException.of(
+                    "EXAM_NOT_ACTIVE",
+                    "Exam cannot be paused in status " + exam.getStatus(),
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        Instant now = Instant.now();
+        if (exam.getExpiresAt() == null) {
+            throw BusinessException.conflict("Exam expiration is unavailable");
+        }
+        if (!now.isBefore(exam.getExpiresAt())) {
+            finishTimeout(exam);
+            return buildSession(exam);
+        }
+
+        if (currentQuestionId == null) {
+            throw BusinessException.badRequest("currentQuestionId is required");
+        }
+        if (!exam.getQuestionIds().contains(currentQuestionId)) {
+            throw BusinessException.of(
+                    "INVALID_EXAM_QUESTION",
+                    "Current question is not in this exam",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        long remaining = Duration.between(now, exam.getExpiresAt()).toMillis();
+        if (remaining <= 0) {
+            finishTimeout(exam);
+            return buildSession(exam);
+        }
+
+        exam.setCurrentQuestionId(currentQuestionId);
+        exam.setPausedAt(now);
+        exam.setRemainingTimeMs(remaining);
+        exam.setExpiresAt(null);
+        exam.setStatus(ExamStatus.PAUSED);
+        examRepository.save(exam);
+        return buildSession(exam);
+    }
+
+    @Transactional
+    public ExamSessionResponse resumeExam(UUID examId, UUID userId) {
+        Exam exam = examRepository.findByIdAndUserIdForUpdate(examId, userId)
+                .orElseThrow(() -> BusinessException.notFound("Exam not found"));
+
+        if (exam.getStatus() == ExamStatus.IN_PROGRESS) {
+            if (isExpired(exam)) {
+                finishTimeout(exam);
+            }
+            return buildSession(exam);
+        }
+        if (exam.getStatus() != ExamStatus.PAUSED) {
+            throw BusinessException.of(
+                    "EXAM_NOT_PAUSED",
+                    "Exam cannot be resumed in status " + exam.getStatus(),
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        Long remaining = exam.getRemainingTimeMs();
+        if (remaining == null || remaining <= 0) {
+            throw BusinessException.conflict("Paused exam has no remaining time");
+        }
+
+        exam.setExpiresAt(Instant.now().plusMillis(remaining));
+        exam.setRemainingTimeMs(null);
+        exam.setPausedAt(null);
+        exam.setStatus(ExamStatus.IN_PROGRESS);
+        examRepository.save(exam);
+        return buildSession(exam);
+    }
+
+    private ExamSessionResponse buildSession(Exam exam) {
         List<ExamAnswer> answers =
                 examAnswerRepository.findByExamIdOrderByQuestionId(
-                        examId
+                        exam.getId()
                 );
 
-        long answeredCount = answers.stream()
-                .filter(answer ->
-                        answer.getSelectedAnswer() != null)
-                .count();
+        Map<Integer, String> selectedAnswers = new LinkedHashMap<>();
+
+        for (ExamAnswer answer : answers) {
+            if (answer.getSelectedAnswer() != null) {
+                selectedAnswers.put(
+                        answer.getQuestionId(),
+                        answer.getSelectedAnswer()
+                );
+            }
+        }
 
         List<Question> questions =
                 questionRepository.findAllById(
@@ -259,28 +412,48 @@ public class ExamService {
                 exam.getExamType(),
                 exam.getStatus().name(),
                 exam.getTotalQuestions(),
-                (int) answeredCount,
+                selectedAnswers.size(),
                 exam.getDurationMinutes(),
                 exam.getExpiresAt(),
                 exam.getMode(),
                 responses,
-                exam.getStartedAt()
+                exam.getStartedAt(),
+                selectedAnswers,
+                remainingTimeMs(exam),
+                exam.getCurrentQuestionId()
         );
     }
 
     // ==================== SUBMIT ANSWER ====================
 
+    @Transactional(noRollbackFor = BusinessException.class)
     public SubmitAnswerResponse submitAnswer(
             UUID examId,
             UUID userId,
             SubmitAnswerRequest request
     ) {
-        Exam exam = examRepository.findByIdAndUserId(examId, userId)
+        Exam exam = examRepository.findByIdAndUserIdForUpdate(examId, userId)
                 .orElseThrow(
                         () -> BusinessException.notFound(
                                 "Exam not found"
                         )
                 );
+
+        if (exam.getStatus() == ExamStatus.TIMEOUT) {
+            throw BusinessException.of(
+                    "EXAM_TIME_EXPIRED",
+                    "Exam time has expired",
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        if (exam.getStatus() == ExamStatus.PAUSED) {
+            throw BusinessException.of(
+                    "EXAM_PAUSED",
+                    "Resume the exam before answering",
+                    HttpStatus.CONFLICT
+            );
+        }
 
         if (exam.getStatus() != ExamStatus.IN_PROGRESS) {
             throw BusinessException.badRequest(
@@ -289,15 +462,25 @@ public class ExamService {
         }
 
         if (isExpired(exam)) {
-            // Worker hoặc getExamSession sẽ kết thúc lượt thi
-            // trong một transaction riêng.
-            throw BusinessException.badRequest(
-                    "Exam time has expired"
+            finishTimeout(exam);
+            // noRollbackFor giữ trạng thái TIMEOUT khi response là 409.
+            throw BusinessException.of(
+                    "EXAM_TIME_EXPIRED",
+                    "Exam time has expired",
+                    HttpStatus.CONFLICT
             );
         }
 
-        Integer questionId =
-                Integer.valueOf(request.questionId());
+        Integer questionId;
+        try {
+            questionId = Integer.valueOf(request.questionId());
+        } catch (NumberFormatException error) {
+            throw BusinessException.of(
+                    "INVALID_QUESTION_ID",
+                    "Question ID must be an integer",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
 
         List<ExamAnswer> answers =
                 examAnswerRepository.findByExamIdOrderByQuestionId(
@@ -322,12 +505,27 @@ public class ExamService {
                                 )
                         );
 
+        validateAnswerOption(question, request.selectedAnswer());
+
+        Instant answeredAt = Instant.now();
+        if ("PRACTICE".equals(exam.getMode())
+                && CURRENT_BANK.equals(exam.getBankVersion())) {
+            wrongQuestionProgressService.recordAnswer(
+                    userId,
+                    exam.getExamType(),
+                    exam.getBankVersion(),
+                    questionId,
+                    request.selectedAnswer(),
+                    answeredAt
+            );
+        }
+
         answer.setSelectedAnswer(request.selectedAnswer());
         answer.setIsCorrect(
                 question.getCorrectAnswer()
                         .equals(request.selectedAnswer())
         );
-        answer.setAnsweredAt(Instant.now());
+        answer.setAnsweredAt(answeredAt);
         examAnswerRepository.save(answer);
 
         if ("PRACTICE".equals(exam.getMode())) {
@@ -351,28 +549,56 @@ public class ExamService {
 
     // ==================== FINISH EXAM ====================
 
-    @CacheEvict(value = "leaderboard", allEntries = true)
-    public ExamResultResponse finishExam(
-            UUID examId,
-            UUID userId
-    ) {
-        Exam exam = examRepository.findByIdAndUserId(examId, userId)
+        @CacheEvict(value = "leaderboard", allEntries = true)
+        public ExamResultResponse finishExam(
+                UUID examId,
+                UUID userId
+        ) {
+        Exam exam = examRepository.findByIdAndUserIdForUpdate(examId, userId)
                 .orElseThrow(
-                        () -> BusinessException.notFound(
-                                "Exam not found"
-                        )
+                        () -> BusinessException.notFound("Exam not found")
                 );
 
+        if (exam.getStatus() == ExamStatus.TIMEOUT
+                || exam.getStatus() == ExamStatus.COMPLETED) {
+                List<ExamAnswer> previous =
+                        examAnswerRepository.findByExamIdOrderByQuestionId(examId);
+
+                ExamResultResponse result =
+                        buildResultResponse(exam, previous);
+
+                examProgressReceiptService.record(
+                        exam,
+                        previous,
+                        result.passed()
+                );
+                return result;
+        }
+
+        if (exam.getStatus() == ExamStatus.PAUSED) {
+                throw BusinessException.of(
+                        "EXAM_PAUSED",
+                        "Resume the exam before finishing",
+                        HttpStatus.CONFLICT
+                );
+        }
+
         if (exam.getStatus() != ExamStatus.IN_PROGRESS) {
-            throw BusinessException.badRequest(
-                    "Exam is already " + exam.getStatus()
-            );
+                throw BusinessException.badRequest(
+                        "Exam is already " + exam.getStatus()
+                );
+        }
+
+        if (isExpired(exam)) {
+                finishTimeout(exam);
+                return buildResultResponse(
+                        exam,
+                        examAnswerRepository.findByExamIdOrderByQuestionId(examId)
+                );
         }
 
         List<ExamAnswer> answers =
-                examAnswerRepository.findByExamIdOrderByQuestionId(
-                        examId
-                );
+                examAnswerRepository.findByExamIdOrderByQuestionId(examId);
 
         int correct = (int) answers.stream()
                 .filter(answer ->
@@ -385,25 +611,33 @@ public class ExamService {
         exam.setCorrectCount(correct);
         exam.setWrongCount(wrong);
         exam.setScore(
-                calculateScore(
-                        correct,
-                        exam.getTotalQuestions()
-                )
+                calculateScore(correct, exam.getTotalQuestions())
         );
         exam.setCompletedAt(Instant.now());
-        examRepository.save(exam);
 
-        return buildResultResponse(exam, answers);
-    }
+        examRepository.save(exam);
+        syncWrongQuestionProgress(exam, answers);
+
+        ExamResultResponse result =
+                buildResultResponse(exam, answers);
+
+        examProgressReceiptService.record(
+                exam,
+                answers,
+                result.passed()
+        );
+
+        return result;
+        }
 
     // ==================== GET RESULT ====================
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ExamResultResponse getExamResult(
             UUID examId,
             UUID userId
     ) {
-        Exam exam = examRepository.findByIdAndUserId(examId, userId)
+        Exam exam = examRepository.findByIdAndUserIdForUpdate(examId, userId)
                 .orElseThrow(
                         () -> BusinessException.notFound(
                                 "Exam not found"
@@ -411,8 +645,20 @@ public class ExamService {
                 );
 
         if (exam.getStatus() == ExamStatus.IN_PROGRESS) {
-            throw BusinessException.badRequest(
-                    "Exam is still in progress"
+            if (isExpired(exam)) {
+                finishTimeout(exam);
+            } else {
+                throw BusinessException.badRequest(
+                        "Exam is still in progress"
+                );
+            }
+        }
+
+        if (exam.getStatus() == ExamStatus.PAUSED) {
+            throw BusinessException.of(
+                    "EXAM_PAUSED",
+                    "Resume the exam before viewing the result",
+                    HttpStatus.CONFLICT
             );
         }
 
@@ -440,8 +686,8 @@ public class ExamService {
                     ExamHistoryResponse history =
                             examMapper.toHistoryResponse(exam);
 
-                    if (exam.getStatus()
-                            == ExamStatus.IN_PROGRESS) {
+                    if (exam.getStatus() == ExamStatus.IN_PROGRESS
+                            || exam.getStatus() == ExamStatus.PAUSED) {
                         return history;
                     }
 
@@ -599,41 +845,149 @@ public class ExamService {
 
     // ==================== HELPERS ====================
 
+    private void syncWrongQuestionProgress(
+            Exam exam,
+            List<ExamAnswer> answers
+    ) {
+        if (!CURRENT_BANK.equals(exam.getBankVersion())) {
+            return;
+        }
+
+        for (ExamAnswer answer : answers) {
+            if (answer.getSelectedAnswer() == null
+                    || answer.getSelectedAnswer().isBlank()) {
+                continue;
+            }
+
+            Instant answeredAt = answer.getAnsweredAt() != null
+                    ? answer.getAnsweredAt()
+                    : exam.getCompletedAt();
+
+            wrongQuestionProgressService.recordAnswer(
+                    exam.getUserId(),
+                    exam.getExamType(),
+                    exam.getBankVersion(),
+                    answer.getQuestionId(),
+                    answer.getSelectedAnswer(),
+                    answeredAt
+            );
+        }
+    }
+
+    private void validateAnswerOption(
+            Question question,
+            String selectedAnswer
+    ) {
+        if (selectedAnswer == null || selectedAnswer.isBlank()) {
+            throw BusinessException.of(
+                    "INVALID_ANSWER_OPTION",
+                    "Selected answer is not an option for this question",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        JsonNode options;
+        try {
+            options = objectMapper.readTree(question.getOptions());
+        } catch (JsonProcessingException | IllegalArgumentException error) {
+            throw BusinessException.conflict(
+                    "Question options are invalid: " + question.getId()
+            );
+        }
+
+        if (options == null || !options.isArray()) {
+            throw BusinessException.conflict(
+                    "Question options are invalid: " + question.getId()
+            );
+        }
+
+        for (JsonNode option : options) {
+            JsonNode label = option.get("label");
+            if (label != null && label.isTextual()
+                    && selectedAnswer.equals(label.asText())) {
+                return;
+            }
+        }
+
+        throw BusinessException.of(
+                "INVALID_ANSWER_OPTION",
+                "Selected answer is not an option for this question",
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
+    private Long remainingTimeMs(Exam exam) {
+        if (exam.getStatus() == ExamStatus.PAUSED) {
+            return exam.getRemainingTimeMs();
+        }
+        if (exam.getStatus() == ExamStatus.IN_PROGRESS
+                && exam.getExpiresAt() != null) {
+            return Math.max(
+                    0L,
+                    Duration.between(Instant.now(), exam.getExpiresAt()).toMillis()
+            );
+        }
+        return 0L;
+    }
+
     private boolean isExpired(Exam exam) {
         return exam.getExpiresAt() != null
-                && Instant.now()
-                        .isAfter(exam.getExpiresAt());
+                && !Instant.now().isBefore(exam.getExpiresAt());
     }
 
     private void finishTimeout(Exam exam) {
         List<ExamAnswer> answers =
-                examAnswerRepository
-                        .findByExamIdOrderByQuestionId(
-                                exam.getId()
-                        );
+                examAnswerRepository.findByExamIdOrderByQuestionId(
+                        exam.getId()
+                );
 
         int correct = (int) answers.stream()
                 .filter(answer ->
-                        Boolean.TRUE.equals(
-                                answer.getIsCorrect()
-                        )
-                )
+                        Boolean.TRUE.equals(answer.getIsCorrect()))
                 .count();
 
         exam.setStatus(ExamStatus.TIMEOUT);
         exam.setCorrectCount(correct);
-        exam.setWrongCount(
-                answers.size() - correct
-        );
+        exam.setWrongCount(answers.size() - correct);
         exam.setScore(
-                calculateScore(
-                        correct,
-                        exam.getTotalQuestions()
-                )
+                calculateScore(correct, exam.getTotalQuestions())
         );
         exam.setCompletedAt(exam.getExpiresAt());
 
         examRepository.save(exam);
+        syncWrongQuestionProgress(exam, answers);
+        examProgressReceiptService.record(
+                exam,
+                answers,
+                passedForProgress(exam, answers)
+        );
+    }
+
+    private boolean passedForProgress(
+            Exam exam,
+            List<ExamAnswer> answers
+    ) {
+        if (exam.getCorrectCount() == null) {
+            return false;
+        }
+
+        if (CURRENT_BANK.equals(exam.getBankVersion())) {
+            return passed(exam, answers, Map.of());
+        }
+
+        if (exam.getCorrectCount() < LEGACY_REQUIRED_CORRECT) {
+            return false;
+        }
+
+        Map<Integer, Question> byId = questionRepository
+                .findAllById(exam.getQuestionIds())
+                .stream()
+                .collect(Collectors.toMap(
+                        Question::getId,
+                        question -> question
+                ));
+
+        return passed(exam, answers, byId);
     }
 
     private QuestionResponse toSessionQuestion(
@@ -661,9 +1015,8 @@ public class ExamService {
                                 question.getIsCritical()
                         );
 
-        boolean reveal =
-                exam.getStatus()
-                        != ExamStatus.IN_PROGRESS;
+        boolean reveal = exam.getStatus() == ExamStatus.COMPLETED
+                || exam.getStatus() == ExamStatus.TIMEOUT;
 
         return new QuestionResponse(
                 response.id(),
@@ -709,15 +1062,32 @@ public class ExamService {
                                 )
                         );
 
-        List<Map<String, Object>> answerDetails =
-                new ArrayList<>();
+        Map<Integer, ExamAnswer> answersById = answers.stream()
+                .collect(Collectors.toMap(
+                        ExamAnswer::getQuestionId,
+                        answer -> answer
+                ));
 
-        for (ExamAnswer answer : answers) {
-            Question question =
-                    byId.get(answer.getQuestionId());
+        List<Map<String, Object>> answerDetails = new ArrayList<>();
+        int answeredWrongCount = 0;
+        int unansweredCount = 0;
 
-            if (question == null) {
-                continue;
+        for (Integer questionId : exam.getQuestionIds()) {
+            ExamAnswer answer = answersById.get(questionId);
+            Question question = byId.get(questionId);
+
+            if (answer == null || question == null) {
+                throw BusinessException.conflict(
+                        "Exam result is missing question " + questionId
+                );
+            }
+
+            boolean unanswered = answer.getSelectedAnswer() == null
+                    || answer.getSelectedAnswer().isBlank();
+            if (unanswered) {
+                unansweredCount++;
+            } else if (!Boolean.TRUE.equals(answer.getIsCorrect())) {
+                answeredWrongCount++;
             }
 
             Object options;
@@ -751,8 +1121,8 @@ public class ExamService {
                     question.getImageUrl()
             );
             detail.put(
-                     "mediaFileId",
-                     question.getMediaFileId()
+                    "mediaFileId",
+                    question.getMediaFileId()
             );
             detail.put(
                     "correctAnswer",
@@ -793,6 +1163,15 @@ public class ExamService {
             answerDetails.add(detail);
         }
 
+        if (answerDetails.size() != exam.getTotalQuestions()
+                || exam.getCorrectCount() == null
+                || exam.getCorrectCount() + answeredWrongCount
+                        + unansweredCount != exam.getTotalQuestions()) {
+            throw BusinessException.conflict(
+                    "Exam result counts do not match its questions"
+            );
+        }
+
         boolean passed =
                 passed(exam, answers, byId);
 
@@ -809,7 +1188,9 @@ public class ExamService {
                 exam.getDurationMinutes(),
                 answerDetails,
                 exam.getStartedAt(),
-                exam.getCompletedAt()
+                exam.getCompletedAt(),
+                answeredWrongCount,
+                unansweredCount
         );
     }
 

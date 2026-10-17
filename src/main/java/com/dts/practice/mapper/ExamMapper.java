@@ -9,6 +9,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper(componentModel = "spring", uses = {QuestionMapper.class})
 public interface ExamMapper {
@@ -16,7 +17,13 @@ public interface ExamMapper {
     @Mapping(target = "examId", source = "exam.id")
     @Mapping(target = "status", expression = "java(exam.getStatus().name())")
     @Mapping(target = "answeredCount", expression = "java(answeredCount)")
-    ExamSessionResponse toSessionResponse(Exam exam, int answeredCount, List<QuestionResponse> questions);
+    @Mapping(target = "answers", source = "answers")
+    ExamSessionResponse toSessionResponse(
+            Exam exam,
+            int answeredCount,
+            List<QuestionResponse> questions,
+            Map<Integer, String> answers
+    );
 
     @Mapping(target = "examId", source = "exam.id")
     @Mapping(target = "status", expression = "java(exam.getStatus().name())")

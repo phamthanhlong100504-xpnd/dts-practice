@@ -87,4 +87,7 @@ public final class ExamMatrix {
 
         return rule;
     }
+
+    /** Publish the source-owned display scale without copying this catalog into Result. */
+    public static java.util.Set<String> supportedClasses() { return BY_CLASS.keySet(); }
 }

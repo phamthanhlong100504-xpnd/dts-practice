@@ -1,9 +1,4 @@
 ﻿spring:
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
   main:
     lazy-initialization: true
   jmx:
@@ -96,7 +91,11 @@ management:
 # ==================== Exam Config ====================
 exam:
   auto-finish-interval-ms: 30000  # Check expired exams every 30s
-
+  progress-outbox:
+    enabled: ${EXAM_PROGRESS_OUTBOX_ENABLED:false}
+    progress-url: ${PROGRESS_SERVICE_URL:http://localhost:8083}
+    internal-key: ${EXAM_PROGRESS_INTERNAL_KEY:}
+    poll-ms: 5000
 springdoc:
   api-docs:
     path: /api-docs
@@ -112,4 +111,3 @@ eureka:
     enabled: ${EUREKA_ENABLED:true}
   instance:
     prefer-ip-address: true
-

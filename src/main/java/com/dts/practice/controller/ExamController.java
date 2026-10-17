@@ -1,10 +1,13 @@
 package com.dts.practice.controller;
 
+import com.dts.practice.dto.request.PauseExamRequest;
 import com.dts.practice.dto.request.StartExamRequest;
 import com.dts.practice.dto.request.SubmitAnswerRequest;
 import com.dts.practice.dto.response.*;
 import com.dts.practice.security.JwtUserDetails;
+import com.dts.practice.service.ActiveExamService;
 import com.dts.practice.service.ExamService;
+import com.dts.practice.service.ExamSessionFeedbackService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +30,8 @@ import java.util.UUID;
 public class ExamController {
 
     private final ExamService examService;
+    private final ActiveExamService activeExamService;
+    private final ExamSessionFeedbackService examSessionFeedbackService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -37,12 +42,55 @@ public class ExamController {
         return ApiResponse.ok(examService.startExam(user, request));
     }
 
+    @GetMapping("/active")
+    @Operation(summary = "Get the latest active session for the current user and license class")
+    public ApiResponse<ActiveExamResponse> getActiveExam(
+            @AuthenticationPrincipal JwtUserDetails user,
+            @RequestParam String examType) {
+        return ApiResponse.ok(
+                activeExamService.getActiveExam(user.userId(), examType)
+        );
+    }
+
     @GetMapping("/{examId}")
     @Operation(summary = "Get exam session details")
     public ApiResponse<ExamSessionResponse> getSession(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID examId) {
-        return ApiResponse.ok(examService.getExamSession(examId, user.userId()));
+        return ApiResponse.ok(
+                examSessionFeedbackService.getSession(
+                        examId,
+                        user.userId()
+                )
+        );
+    }
+
+    @PostMapping("/{examId}/pause")
+    @Operation(summary = "Pause the timer and save the current question")
+    public ApiResponse<ExamSessionResponse> pauseExam(
+            @AuthenticationPrincipal JwtUserDetails user,
+            @PathVariable UUID examId,
+            @Valid @RequestBody PauseExamRequest request) {
+        return ApiResponse.ok(
+                examSessionFeedbackService.pauseExam(
+                        examId,
+                        user.userId(),
+                        request.currentQuestionId()
+                )
+        );
+    }
+
+    @PostMapping("/{examId}/resume")
+    @Operation(summary = "Resume a paused exam with its remaining time")
+    public ApiResponse<ExamSessionResponse> resumeExam(
+            @AuthenticationPrincipal JwtUserDetails user,
+            @PathVariable UUID examId) {
+        return ApiResponse.ok(
+                examSessionFeedbackService.resumeExam(
+                        examId,
+                        user.userId()
+                )
+        );
     }
 
     @PostMapping("/{examId}/answers")
@@ -51,7 +99,13 @@ public class ExamController {
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID examId,
             @Valid @RequestBody SubmitAnswerRequest request) {
-        return ApiResponse.ok(examService.submitAnswer(examId, user.userId(), request));
+        return ApiResponse.ok(
+                examService.submitAnswer(
+                        examId,
+                        user.userId(),
+                        request
+                )
+        );
     }
 
     @PostMapping("/{examId}/finish")
@@ -59,7 +113,9 @@ public class ExamController {
     public ApiResponse<ExamResultResponse> finishExam(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID examId) {
-        return ApiResponse.ok(examService.finishExam(examId, user.userId()));
+        return ApiResponse.ok(
+                examService.finishExam(examId, user.userId())
+        );
     }
 
     @GetMapping("/{examId}/result")
@@ -67,7 +123,9 @@ public class ExamController {
     public ApiResponse<ExamResultResponse> getResult(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID examId) {
-        return ApiResponse.ok(examService.getExamResult(examId, user.userId()));
+        return ApiResponse.ok(
+                examService.getExamResult(examId, user.userId())
+        );
     }
 
     @GetMapping("/history")
@@ -75,7 +133,9 @@ public class ExamController {
     public ApiResponse<Page<ExamHistoryResponse>> getHistory(
             @AuthenticationPrincipal JwtUserDetails user,
             Pageable pageable) {
-        return ApiResponse.ok(examService.getExamHistory(user.userId(), pageable));
+        return ApiResponse.ok(
+                examService.getExamHistory(user.userId(), pageable)
+        );
     }
 
     @GetMapping("/leaderboard")
@@ -83,6 +143,8 @@ public class ExamController {
     public ApiResponse<List<ExamService.LeaderboardEntry>> getLeaderboard(
             @RequestParam(required = false) String examType,
             @RequestParam(required = false, defaultValue = "all") String period) {
-        return ApiResponse.ok(examService.getLeaderboard(examType, period));
+        return ApiResponse.ok(
+                examService.getLeaderboard(examType, period)
+        );
     }
 }

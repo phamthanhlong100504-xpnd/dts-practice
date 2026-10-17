@@ -22,7 +22,8 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class QuestionService {
 
-    private static final String CURRENT_BANK_VERSION = "dts-2026-600-v1";
+    private static final String CURRENT_BANK_VERSION =
+        CurrentQuestionBank.currentVersion();
 
     private static final Set<String> LICENSE_CLASSES = Set.of(
             "A1", "A", "B1", "B", "C1", "C", "D1", "D2", "D",
@@ -33,10 +34,11 @@ public class QuestionService {
     private final QuestionMapper questionMapper;
 
     @Cacheable(
-            value = "questions",
-            key = "'dts-2026-600-v1:chapter:' + #chapterId + ':license:' + "
-                    + "(#licenseClass == null ? 'ALL' : #licenseClass.trim().toUpperCase())"
-    )
+        value = "questions",
+        key = "T(com.dts.practice.service.CurrentQuestionBank).currentVersion()"
+                + " + ':chapter:' + #chapterId + ':license:' + "
+                + "(#licenseClass == null ? 'ALL' : #licenseClass.trim().toUpperCase())"
+        )
     public List<QuestionResponse> getByChapter(
             Integer chapterId,
             String licenseClass

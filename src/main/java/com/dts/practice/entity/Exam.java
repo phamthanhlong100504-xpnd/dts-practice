@@ -36,11 +36,16 @@ public class Exam {
 
     @Column(name = "exam_type", nullable = false, length = 10)
     private String examType;
+
     @Column(name = "bank_version", nullable = false, length = 64)
     private String bankVersion;
 
     @Column(name = "critical_question_id")
     private Integer criticalQuestionId;
+
+    @Column(name = "preset_exam_set_id")
+    private UUID presetExamSetId;
+
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "question_ids")
     private List<Integer> questionIds;
@@ -71,6 +76,15 @@ public class Exam {
 
     @Column(name = "expires_at")
     private Instant expiresAt;
+
+    @Column(name = "paused_at")
+    private Instant pausedAt;
+
+    @Column(name = "remaining_time_ms")
+    private Long remainingTimeMs;
+
+    @Column(name = "current_question_id")
+    private Integer currentQuestionId;
 
     @Column(name = "mode", length = 10)
     private String mode;

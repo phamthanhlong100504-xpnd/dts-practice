@@ -1,0 +1,2 @@
+ALTER TABLE exam_answers
+    ADD COLUMN is_flagged BOOLEAN NOT NULL DEFAULT FALSE;

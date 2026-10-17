@@ -12,8 +12,10 @@ import java.util.UUID;
 @Entity
 @Table(name = "exam_answers")
 @EntityListeners(AuditingEntityListener.class)
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ExamAnswer {
 
@@ -37,6 +39,9 @@ public class ExamAnswer {
     @Column(name = "answered_at")
     private Instant answeredAt;
 
+    @Column(name = "is_flagged", nullable = false)
+    private boolean flagged;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -44,9 +49,4 @@ public class ExamAnswer {
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
-
-    @PrePersist
-    void onCreate() {
-        if (answeredAt == null) answeredAt = Instant.now();
-    }
 }

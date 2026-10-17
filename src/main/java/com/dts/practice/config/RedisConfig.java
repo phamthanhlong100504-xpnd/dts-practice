@@ -15,7 +15,9 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class RedisConfig {
 
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+    public RedisTemplate<String, Object> redisTemplate(
+            RedisConnectionFactory connectionFactory
+    ) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
         template.setKeySerializer(new StringRedisSerializer());
@@ -27,15 +29,24 @@ public class RedisConfig {
     }
 
     @Bean
-    MessageListenerAdapter messageListener(RedisMessageSubscriber redisMessageSubscriber) {
+    MessageListenerAdapter messageListener(
+            RedisMessageSubscriber redisMessageSubscriber
+    ) {
         return new MessageListenerAdapter(redisMessageSubscriber);
     }
 
     @Bean
-    RedisMessageListenerContainer redisContainer(RedisConnectionFactory connectionFactory, MessageListenerAdapter messageListener) {
-        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+    RedisMessageListenerContainer redisContainer(
+            RedisConnectionFactory connectionFactory,
+            MessageListenerAdapter messageListener
+    ) {
+        RedisMessageListenerContainer container =
+                new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
-        container.addMessageListener(messageListener, new ChannelTopic("channel:user_program_events"));
+        container.addMessageListener(
+                messageListener,
+                new ChannelTopic("channel:user_program_events")
+        );
         return container;
     }
 }

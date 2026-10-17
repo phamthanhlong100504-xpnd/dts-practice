@@ -24,7 +24,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class QuestionBankImportService {
 
-    private static final String BANK_VERSION = "dts-2026-600-v1";
+    private static final String BANK_VERSION = CurrentQuestionBank.currentVersion();
 
     private static final Set<String> LICENSES = Set.of(
             "A1", "A", "B1", "B", "C1", "C", "D1", "D2", "D",

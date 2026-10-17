@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -34,8 +34,11 @@ import static org.assertj.core.api.Assertions.*;
 @DisplayName("ExamRepository")
 class ExamRepositoryTest {
 
+    private static final String BANK = "dts-2026-600-v1";
+
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+    static PostgreSQLContainer<?> postgres =
+            new PostgreSQLContainer<>("postgres:16-alpine");
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -60,21 +63,31 @@ class ExamRepositoryTest {
         Instant now = Instant.now();
 
         completedExam = Exam.builder()
-                .userId(userId).examType("A1")
-                .questionIds(List.of(1, 2, 3)).totalQuestions(3)
-                .status(ExamStatus.COMPLETED).score(90)
-                .correctCount(2).wrongCount(1)
+                .userId(userId)
+                .examType("A1")
+                .bankVersion(BANK)
+                .questionIds(List.of(1, 2, 3))
+                .totalQuestions(3)
+                .status(ExamStatus.COMPLETED)
+                .score(90)
+                .correctCount(2)
+                .wrongCount(1)
                 .startedAt(now.minus(1, ChronoUnit.HOURS))
                 .completedAt(now)
-                .mode("EXAM").durationMinutes(20)
+                .mode("EXAM")
+                .durationMinutes(20)
                 .build();
 
         inProgressExam = Exam.builder()
-                .userId(userId).examType("B1")
-                .questionIds(List.of(4, 5, 6)).totalQuestions(3)
+                .userId(userId)
+                .examType("B1")
+                .bankVersion(BANK)
+                .questionIds(List.of(4, 5, 6))
+                .totalQuestions(3)
                 .status(ExamStatus.IN_PROGRESS)
                 .startedAt(now)
-                .mode("PRACTICE").durationMinutes(30)
+                .mode("PRACTICE")
+                .durationMinutes(30)
                 .expiresAt(now.plus(30, ChronoUnit.MINUTES))
                 .build();
 
@@ -84,49 +97,116 @@ class ExamRepositoryTest {
     }
 
     @Test
-    @DisplayName("should find exam by id and userId")
+    @DisplayName("find exam by id and user")
     void shouldFindByIdAndUserId() {
-        Optional<Exam> result = examRepository.findByIdAndUserId(completedExam.getId(), userId);
+        Optional<Exam> result = examRepository.findByIdAndUserId(
+                completedExam.getId(), userId
+        );
 
         assertThat(result).isPresent();
         assertThat(result.get().getExamType()).isEqualTo("A1");
     }
 
     @Test
-    @DisplayName("should return empty when userId does not match")
+    @DisplayName("do not return another user's exam")
     void shouldReturnEmptyForWrongUser() {
-        Optional<Exam> result = examRepository.findByIdAndUserId(completedExam.getId(), UUID.randomUUID());
+        Optional<Exam> result = examRepository.findByIdAndUserId(
+                completedExam.getId(), UUID.randomUUID()
+        );
 
         assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("should find exams by userId ordered by startedAt desc")
+    @DisplayName("list user's exams by start time")
     void shouldFindByUserIdOrderedByDate() {
-        Page<Exam> result = examRepository.findByUserIdOrderByStartedAtDesc(userId, PageRequest.of(0, 10));
+        Page<Exam> result =
+                examRepository.findByUserIdOrderByStartedAtDesc(
+                        userId, PageRequest.of(0, 10)
+                );
 
         assertThat(result.getContent()).hasSize(2);
         assertThat(result.getContent().get(0).getStartedAt())
-                .isAfterOrEqualTo(result.getContent().get(1).getStartedAt());
+                .isAfterOrEqualTo(
+                        result.getContent().get(1).getStartedAt()
+                );
     }
 
     @Test
-    @DisplayName("should count exams by userId and status")
+    @DisplayName("count user's exams by status")
     void shouldCountByUserIdAndStatus() {
-        long completed = examRepository.countByUserIdAndStatus(userId, ExamStatus.COMPLETED);
-        long inProgress = examRepository.countByUserIdAndStatus(userId, ExamStatus.IN_PROGRESS);
+        long completed = examRepository.countByUserIdAndStatus(
+                userId, ExamStatus.COMPLETED
+        );
+        long inProgress = examRepository.countByUserIdAndStatus(
+                userId, ExamStatus.IN_PROGRESS
+        );
 
         assertThat(completed).isEqualTo(1);
         assertThat(inProgress).isEqualTo(1);
     }
 
     @Test
-    @DisplayName("should find expired in-progress exams")
+    @DisplayName("find expired in-progress exams")
     void shouldFindExpiredExams() {
         Instant future = Instant.now().plus(1, ChronoUnit.HOURS);
-        List<Exam> expired = examRepository.findByStatusAndExpiresAtBefore(
-                ExamStatus.IN_PROGRESS, future);
+
+        List<Exam> expired =
+                examRepository.findByStatusAndExpiresAtBefore(
+                        ExamStatus.IN_PROGRESS, future
+                );
 
         assertThat(expired).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("active exam belongs to user, license, bank and valid time")
+    void shouldFindOnlyApplicableActiveExam() {
+        Instant now = Instant.now();
+
+        Optional<Exam> active = examRepository
+                .findFirstByUserIdAndExamTypeAndBankVersionAndStatusAndExpiresAtAfterOrderByStartedAtDesc(
+                        userId, "B1", BANK, ExamStatus.IN_PROGRESS, now
+                );
+
+        assertThat(active).isPresent();
+        assertThat(active.get().getId())
+                .isEqualTo(inProgressExam.getId());
+
+        assertThat(examRepository
+                .findFirstByUserIdAndExamTypeAndBankVersionAndStatusAndExpiresAtAfterOrderByStartedAtDesc(
+                        UUID.randomUUID(),
+                        "B1",
+                        BANK,
+                        ExamStatus.IN_PROGRESS,
+                        now
+                )).isEmpty();
+
+        assertThat(examRepository
+                .findFirstByUserIdAndExamTypeAndBankVersionAndStatusAndExpiresAtAfterOrderByStartedAtDesc(
+                        userId,
+                        "A1",
+                        BANK,
+                        ExamStatus.IN_PROGRESS,
+                        now
+                )).isEmpty();
+
+        assertThat(examRepository
+                .findFirstByUserIdAndExamTypeAndBankVersionAndStatusAndExpiresAtAfterOrderByStartedAtDesc(
+                        userId,
+                        "B1",
+                        "legacy-v1",
+                        ExamStatus.IN_PROGRESS,
+                        now
+                )).isEmpty();
+
+        assertThat(examRepository
+                .findFirstByUserIdAndExamTypeAndBankVersionAndStatusAndExpiresAtAfterOrderByStartedAtDesc(
+                        userId,
+                        "B1",
+                        BANK,
+                        ExamStatus.IN_PROGRESS,
+                        now.plus(31, ChronoUnit.MINUTES)
+                )).isEmpty();
     }
 }
