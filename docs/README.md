@@ -1,6 +1,8 @@
-# DTS Practice Service - Documentation
+# DTS Practice — tài liệu source hiện hành
 
-Thư mục chứa tài liệu thiết kế cơ sở dữ liệu (ERD) và API Specification.
+- [Chức năng và nghiệp vụ](PRACTICE_FEATURES.md)
+- [Chạy local và nhập dữ liệu máy mới](LOCAL_SETUP.md)
+- [API blueprints](api-blueprint/README.md)
+- [Danh mục migration và checksum file](db/MIGRATION_CATALOG.md)
 
-- `db/`: Sơ đồ CSDL và Flyway Migrations documentation
-- `api-blueprint/`: Tài liệu chi tiết các API Endpoints
+Source/migration hiện có được giữ nguyên trong đợt chuẩn bị Git. Tài liệu mô tả các luồng học/luyện, trạng thái phiên, outbox và dữ liệu tham chiếu đã bổ sung so với main. Không dùng dữ liệu runtime local làm seed tài khoản/lịch sử trong repo.
