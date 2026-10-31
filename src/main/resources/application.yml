@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   main:
     lazy-initialization: true
   jmx:
@@ -39,9 +39,11 @@
     serialization:
       write-dates-as-timestamps: false
   cache:
-    type: redis
+    type: caffeine
   data:
     redis:
+      repositories:
+        enabled: false
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
@@ -107,7 +109,7 @@ springdoc:
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+      defaultZone: ${EUREKA_URI:http://eureka-server:8761/eureka/}
     enabled: ${EUREKA_ENABLED:true}
   instance:
     prefer-ip-address: true

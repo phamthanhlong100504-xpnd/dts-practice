@@ -2,6 +2,7 @@ package com.dts.practice.messaging;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import static com.dts.practice.config.CaffeineCacheConfig.USER_PROGRAMS_CACHE;
 
 @Service
+@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = false)
 public class RedisMessageSubscriber implements MessageListener {
 
     private final CacheManager cacheManager;
