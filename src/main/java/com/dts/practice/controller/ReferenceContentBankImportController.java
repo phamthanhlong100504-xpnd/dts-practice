@@ -39,7 +39,7 @@ public class ReferenceContentBankImportController {
 
     @PostMapping("/import-traffic-signs")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('PERM_practice:import')")
     public ApiResponse<Map<String, Object>> importTrafficSigns(
             @Valid @RequestBody
             ImportTrafficSignBankRequest request
@@ -58,7 +58,7 @@ public class ReferenceContentBankImportController {
 
     @PostMapping("/import-memory-tips")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('PERM_practice:import')")
     public ApiResponse<Map<String, Object>> importMemoryTips(
             @Valid @RequestBody
             ImportMemoryTipBankRequest request

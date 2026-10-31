@@ -28,7 +28,7 @@ public class QuestionBankImportController {
 
     @PostMapping("/import-bank")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') and hasAuthority('PERM_practice:import')")
     public ApiResponse<Map<String, Object>> importBank(
             @Valid @RequestBody ImportQuestionBankRequest request) {
         int imported = questionBankImportService.importBank(request);

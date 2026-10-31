@@ -6,6 +6,7 @@ import com.dts.practice.service.QuestionService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +26,7 @@ public class QuestionController {
     private final QuestionService questionService;
 
     @GetMapping("/chapter/{chapter}")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<List<QuestionResponse>> getByChapter(
             @PathVariable Integer chapter,
             @RequestParam(required = false) String licenseClass
@@ -35,6 +37,7 @@ public class QuestionController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<QuestionResponse> getById(
             @PathVariable Integer id,
             @RequestParam(required = false) String licenseClass
@@ -45,6 +48,7 @@ public class QuestionController {
     }
 
     @GetMapping("/critical")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<List<QuestionResponse>> getCritical(
             @RequestParam(required = false) String licenseClass
     ) {
@@ -54,6 +58,7 @@ public class QuestionController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<Map<String, Object>> getStats(
             @RequestParam(required = false) String licenseClass
     ) {

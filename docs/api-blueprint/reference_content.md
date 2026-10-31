@@ -17,7 +17,7 @@ Hai API đọc dùng Cache-Control: no-store. Import là POST ADMIN riêng, khô
 ### `GET /api/v1/memory-tips`
 
 - HTTP thành công: **200**; response Java: `ResponseEntity<ApiResponse<MemoryTipListResponse>>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Giữ phạm vi dữ liệu dùng chung của endpoint hiện có.
 - Controller: [`src/main/java/com/dts/practice/controller/MemoryTipController.java`](../../src/main/java/com/dts/practice/controller/MemoryTipController.java), method `list`.
 
 List all published memory tips from the current shared bank
@@ -29,7 +29,7 @@ DTO: `MemoryTipListResponse`.
 ### `POST /api/v1/reference-content/admin/import-traffic-signs`
 
 - HTTP thành công: **201**; response Java: `ApiResponse<Map<String, Object>>`.
-- Quyền: **ADMIN**.
+- Quyền: Bearer token hợp lệ và ROLE_ADMIN cùng `practice:import`. Giữ phạm vi dữ liệu dùng chung của endpoint hiện có.
 - Controller: [`src/main/java/com/dts/practice/controller/ReferenceContentBankImportController.java`](../../src/main/java/com/dts/practice/controller/ReferenceContentBankImportController.java), method `importTrafficSigns`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -41,7 +41,7 @@ DTO: `ImportTrafficSignBankRequest`.
 ### `POST /api/v1/reference-content/admin/import-memory-tips`
 
 - HTTP thành công: **201**; response Java: `ApiResponse<Map<String, Object>>`.
-- Quyền: **ADMIN**.
+- Quyền: Bearer token hợp lệ và ROLE_ADMIN cùng `practice:import`. Giữ phạm vi dữ liệu dùng chung của endpoint hiện có.
 - Controller: [`src/main/java/com/dts/practice/controller/ReferenceContentBankImportController.java`](../../src/main/java/com/dts/practice/controller/ReferenceContentBankImportController.java), method `importMemoryTips`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -53,7 +53,7 @@ DTO: `ImportMemoryTipBankRequest`.
 ### `GET /api/v1/traffic-signs`
 
 - HTTP thành công: **200**; response Java: `ResponseEntity<ApiResponse<TrafficSignListResponse>>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Giữ phạm vi dữ liệu dùng chung của endpoint hiện có.
 - Controller: [`src/main/java/com/dts/practice/controller/TrafficSignController.java`](../../src/main/java/com/dts/practice/controller/TrafficSignController.java), method `list`.
 
 List traffic signs with group filtering, Vietnamese search, and stable pagination
@@ -70,7 +70,7 @@ DTO: `TrafficSignListResponse`.
 ### `GET /api/v1/traffic-signs/{id}`
 
 - HTTP thành công: **200**; response Java: `ResponseEntity<ApiResponse<TrafficSignResponse>>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Giữ phạm vi dữ liệu dùng chung của endpoint hiện có.
 - Controller: [`src/main/java/com/dts/practice/controller/TrafficSignController.java`](../../src/main/java/com/dts/practice/controller/TrafficSignController.java), method `get`.
 
 Get a published traffic sign from the current bank
@@ -88,3 +88,7 @@ DTO: `TrafficSignResponse`.
 ## Part 4 — Lưu trữ và triển khai
 
 Các service và bảng liên quan được tổng hợp trong [danh mục chức năng](../PRACTICE_FEATURES.md) và [migration catalog](../db/MIGRATION_CATALOG.md). Chạy migration theo thứ tự version, giữ nguyên checksum. Xem [LOCAL_SETUP.md](../LOCAL_SETUP.md) để cấu hình DB/Kafka/Progress và nhập dữ liệu. Tài liệu này không tạo endpoint hay thay đổi runtime.
+
+## Authorization ngày 31 tháng 10 năm 2026
+
+Các endpoint trong tài liệu này áp dụng permission theo [ma trận Practice](authorization.md). GET nghiệp vụ dùng practice:read; thao tác học/ôn dùng practice:learn; thao tác trên phiên thi thử dùng practice:exam; import cần ROLE_ADMIN cùng practice:import. Giữ ownership và nghiệp vụ đã mô tả. Blueprint từng API theo Part 0–4 được liệt kê trong [mục lục](README.md).

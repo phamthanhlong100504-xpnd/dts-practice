@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,6 +31,7 @@ public class ExamCursorController {
 
     @PutMapping("/{examId}/cursor")
     @Operation(summary = "Save the current question in an active exam")
+    @PreAuthorize("hasAuthority('PERM_practice:exam')")
     public ApiResponse<ExamSessionResponse> updateCursor(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID examId,

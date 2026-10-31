@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -30,6 +31,7 @@ public class CriticalQuestionProgressController {
 
     @GetMapping("/overview")
     @Operation(summary = "Get critical question learning progress")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<CriticalProgressOverviewResponse> getOverview(
             @AuthenticationPrincipal JwtUserDetails user,
             @RequestParam String licenseClass
@@ -41,6 +43,7 @@ public class CriticalQuestionProgressController {
 
     @PutMapping("/{questionId}/progress")
     @Operation(summary = "Mark a critical question as learned or not learned")
+    @PreAuthorize("hasAuthority('PERM_practice:learn')")
     public ApiResponse<CriticalProgressOverviewResponse> updateProgress(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable Integer questionId,

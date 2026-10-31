@@ -23,7 +23,7 @@ Retry tạo examId mới với bộ câu hỏi của nguồn đã hoàn thành h
 ### `POST /api/v1/exams`
 
 - HTTP thành công: **201**; response Java: `ApiResponse<ExamSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:exam`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamController.java`](../../src/main/java/com/dts/practice/controller/ExamController.java), method `startExam`.
 
 Start a new exam or practice session
@@ -38,7 +38,7 @@ DTO: `ExamSessionResponse`, `StartExamRequest`.
 ### `GET /api/v1/exams/active`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ActiveExamResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamController.java`](../../src/main/java/com/dts/practice/controller/ExamController.java), method `getActiveExam`.
 
 Get the latest active session for the current user and license class
@@ -53,7 +53,7 @@ DTO: `ActiveExamResponse`.
 ### `GET /api/v1/exams/{examId}`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ExamSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamController.java`](../../src/main/java/com/dts/practice/controller/ExamController.java), method `getSession`.
 
 Get exam session details
@@ -68,7 +68,7 @@ DTO: `ExamSessionResponse`.
 ### `POST /api/v1/exams/{examId}/pause`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ExamSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:exam`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamController.java`](../../src/main/java/com/dts/practice/controller/ExamController.java), method `pauseExam`.
 
 Pause the timer and save the current question
@@ -84,7 +84,7 @@ DTO: `ExamSessionResponse`, `PauseExamRequest`.
 ### `POST /api/v1/exams/{examId}/resume`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ExamSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:exam`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamController.java`](../../src/main/java/com/dts/practice/controller/ExamController.java), method `resumeExam`.
 
 Resume a paused exam with its remaining time
@@ -99,7 +99,7 @@ DTO: `ExamSessionResponse`.
 ### `POST /api/v1/exams/{examId}/answers`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<SubmitAnswerResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:exam`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamController.java`](../../src/main/java/com/dts/practice/controller/ExamController.java), method `submitAnswer`.
 
 Submit an answer for a question (in practice mode, returns explanation)
@@ -115,7 +115,7 @@ DTO: `SubmitAnswerRequest`, `SubmitAnswerResponse`.
 ### `POST /api/v1/exams/{examId}/finish`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ExamResultResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:exam`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamController.java`](../../src/main/java/com/dts/practice/controller/ExamController.java), method `finishExam`.
 
 Finish exam and get results
@@ -130,7 +130,7 @@ DTO: `ExamResultResponse`.
 ### `GET /api/v1/exams/{examId}/result`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ExamResultResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamController.java`](../../src/main/java/com/dts/practice/controller/ExamController.java), method `getResult`.
 
 Get exam result (must be completed)
@@ -145,7 +145,7 @@ DTO: `ExamResultResponse`.
 ### `GET /api/v1/exams/history`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<Page<ExamHistoryResponse>>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamController.java`](../../src/main/java/com/dts/practice/controller/ExamController.java), method `getHistory`.
 
 Get exam history for current user
@@ -160,7 +160,7 @@ DTO: `ExamHistoryResponse`.
 ### `GET /api/v1/exams/leaderboard`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<List<ExamService.LeaderboardEntry>>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Giữ phạm vi dữ liệu dùng chung của endpoint hiện có.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamController.java`](../../src/main/java/com/dts/practice/controller/ExamController.java), method `getLeaderboard`.
 
 Get top scores leaderboard
@@ -175,7 +175,7 @@ DTO: `LeaderboardEntry`.
 ### `PUT /api/v1/exams/{examId}/cursor`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ExamSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:exam`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamCursorController.java`](../../src/main/java/com/dts/practice/controller/ExamCursorController.java), method `updateCursor`.
 
 Save the current question in an active exam
@@ -191,7 +191,7 @@ DTO: `ExamSessionResponse`, `UpdateExamCursorRequest`.
 ### `GET /api/v1/exams/{examId}/progress`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ExamProgressReceiptResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamProgressReceiptController.java`](../../src/main/java/com/dts/practice/controller/ExamProgressReceiptController.java), method `getProgress`.
 
 Get the canonical progress receipt for a finished exam
@@ -206,7 +206,7 @@ DTO: `ExamProgressReceiptResponse`.
 ### `GET /api/v1/exams/{examId}/flags`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ExamFlagsResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamQuestionFlagController.java`](../../src/main/java/com/dts/practice/controller/ExamQuestionFlagController.java), method `getFlags`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -219,7 +219,7 @@ DTO: `ExamFlagsResponse`.
 ### `PUT /api/v1/exams/{examId}/questions/{questionId}/flag`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ExamFlagsResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:exam`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamQuestionFlagController.java`](../../src/main/java/com/dts/practice/controller/ExamQuestionFlagController.java), method `updateFlag`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -234,7 +234,7 @@ DTO: `ExamFlagsResponse`, `UpdateExamFlagRequest`.
 ### `POST /api/v1/exams/{examId}/retry`
 
 - HTTP thành công: **201**; response Java: `ApiResponse<ExamSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:exam`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ExamRetryController.java`](../../src/main/java/com/dts/practice/controller/ExamRetryController.java), method `retryExam`.
 
 Retry a completed exam with the same questions and order
@@ -253,3 +253,7 @@ DTO: `ExamSessionResponse`.
 ## Part 4 — Lưu trữ và triển khai
 
 Các service và bảng liên quan được tổng hợp trong [danh mục chức năng](../PRACTICE_FEATURES.md) và [migration catalog](../db/MIGRATION_CATALOG.md). Chạy migration theo thứ tự version, giữ nguyên checksum. Xem [LOCAL_SETUP.md](../LOCAL_SETUP.md) để cấu hình DB/Kafka/Progress và nhập dữ liệu. Tài liệu này không tạo endpoint hay thay đổi runtime.
+
+## Authorization ngày 31 tháng 10 năm 2026
+
+Các endpoint trong tài liệu này áp dụng permission theo [ma trận Practice](authorization.md). GET nghiệp vụ dùng practice:read; thao tác học/ôn dùng practice:learn; thao tác trên phiên thi thử dùng practice:exam; import cần ROLE_ADMIN cùng practice:import. Giữ ownership và nghiệp vụ đã mô tả. Blueprint từng API theo Part 0–4 được liệt kê trong [mục lục](README.md).

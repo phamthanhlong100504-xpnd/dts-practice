@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,6 +37,7 @@ public class ExamController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Start a new exam or practice session")
+    @PreAuthorize("hasAuthority('PERM_practice:exam')")
     public ApiResponse<ExamSessionResponse> startExam(
             @AuthenticationPrincipal JwtUserDetails user,
             @Valid @RequestBody StartExamRequest request) {
@@ -44,6 +46,7 @@ public class ExamController {
 
     @GetMapping("/active")
     @Operation(summary = "Get the latest active session for the current user and license class")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<ActiveExamResponse> getActiveExam(
             @AuthenticationPrincipal JwtUserDetails user,
             @RequestParam String examType) {
@@ -54,6 +57,7 @@ public class ExamController {
 
     @GetMapping("/{examId}")
     @Operation(summary = "Get exam session details")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<ExamSessionResponse> getSession(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID examId) {
@@ -67,6 +71,7 @@ public class ExamController {
 
     @PostMapping("/{examId}/pause")
     @Operation(summary = "Pause the timer and save the current question")
+    @PreAuthorize("hasAuthority('PERM_practice:exam')")
     public ApiResponse<ExamSessionResponse> pauseExam(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID examId,
@@ -82,6 +87,7 @@ public class ExamController {
 
     @PostMapping("/{examId}/resume")
     @Operation(summary = "Resume a paused exam with its remaining time")
+    @PreAuthorize("hasAuthority('PERM_practice:exam')")
     public ApiResponse<ExamSessionResponse> resumeExam(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID examId) {
@@ -95,6 +101,7 @@ public class ExamController {
 
     @PostMapping("/{examId}/answers")
     @Operation(summary = "Submit an answer for a question (in practice mode, returns explanation)")
+    @PreAuthorize("hasAuthority('PERM_practice:exam')")
     public ApiResponse<SubmitAnswerResponse> submitAnswer(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID examId,
@@ -110,6 +117,7 @@ public class ExamController {
 
     @PostMapping("/{examId}/finish")
     @Operation(summary = "Finish exam and get results")
+    @PreAuthorize("hasAuthority('PERM_practice:exam')")
     public ApiResponse<ExamResultResponse> finishExam(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID examId) {
@@ -120,6 +128,7 @@ public class ExamController {
 
     @GetMapping("/{examId}/result")
     @Operation(summary = "Get exam result (must be completed)")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<ExamResultResponse> getResult(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID examId) {
@@ -130,6 +139,7 @@ public class ExamController {
 
     @GetMapping("/history")
     @Operation(summary = "Get exam history for current user")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<Page<ExamHistoryResponse>> getHistory(
             @AuthenticationPrincipal JwtUserDetails user,
             Pageable pageable) {
@@ -140,6 +150,7 @@ public class ExamController {
 
     @GetMapping("/leaderboard")
     @Operation(summary = "Get top scores leaderboard")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<List<ExamService.LeaderboardEntry>> getLeaderboard(
             @RequestParam(required = false) String examType,
             @RequestParam(required = false, defaultValue = "all") String period) {

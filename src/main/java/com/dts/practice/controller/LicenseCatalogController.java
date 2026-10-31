@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +25,7 @@ public class LicenseCatalogController {
 
     @GetMapping("/license-catalog")
     @Operation(summary = "List license classes, canonical exam rules and current bank counts")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<List<LicenseCatalogItemResponse>> getLicenseCatalog() {
         return ApiResponse.ok(licenseCatalogService.getCatalog());
     }

@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,6 +31,7 @@ public class ExamRetryController {
     @PostMapping("/{examId}/retry")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Retry a completed exam with the same questions and order")
+    @PreAuthorize("hasAuthority('PERM_practice:exam')")
     public ApiResponse<ExamSessionResponse> retryExam(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID examId

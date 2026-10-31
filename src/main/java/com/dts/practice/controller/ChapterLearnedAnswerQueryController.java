@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +27,7 @@ public class ChapterLearnedAnswerQueryController {
     private final ChapterLearnedAnswerQueryService queryService;
 
     @GetMapping("/{chapterId}/answers")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<List<ChapterLearnedAnswerResponse>> getAnswers(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable int chapterId,

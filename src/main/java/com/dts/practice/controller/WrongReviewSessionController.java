@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,6 +41,7 @@ public class WrongReviewSessionController {
     private final WrongReviewFinishService wrongReviewFinishService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('PERM_practice:learn')")
     public ApiResponse<WrongReviewSessionResponse> start(
             @AuthenticationPrincipal JwtUserDetails user,
             @Valid @RequestBody StartWrongReviewRequest request
@@ -53,6 +55,7 @@ public class WrongReviewSessionController {
     }
 
     @GetMapping("/{sessionId}")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<WrongReviewSessionResponse> get(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID sessionId
@@ -66,6 +69,7 @@ public class WrongReviewSessionController {
     }
 
     @PostMapping("/{sessionId}/answers")
+    @PreAuthorize("hasAuthority('PERM_practice:learn')")
     public ApiResponse<WrongReviewAnswerResponse> submitAnswer(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID sessionId,
@@ -82,6 +86,7 @@ public class WrongReviewSessionController {
     }
 
     @PutMapping("/{sessionId}/cursor")
+    @PreAuthorize("hasAuthority('PERM_practice:learn')")
     public ApiResponse<WrongReviewSessionResponse> saveCursor(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID sessionId,
@@ -97,6 +102,7 @@ public class WrongReviewSessionController {
     }
 
     @PostMapping("/{sessionId}/finish")
+    @PreAuthorize("hasAuthority('PERM_practice:learn')")
     public ApiResponse<WrongReviewSessionResponse> finish(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID sessionId

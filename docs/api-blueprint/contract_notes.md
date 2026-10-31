@@ -8,7 +8,7 @@ Practice là nguồn câu hỏi đã import, học/luyện/thi thử và tương
 
 ## Part 1 — Xác thực và sở hữu
 
-Gửi `Authorization: Bearer <access-token Identity>` và `Content-Type: application/json` cho body JSON. Không lưu token thực trong tài liệu, fixture hay Git. JWT_ACCESS_SECRET và issuer phải khớp Identity/Gateway. Hầu hết business API yêu cầu authenticated; import yêu cầu ADMIN qua method security. Tài nguyên cá nhân lấy userId từ principal, không cho query userId thay chủ sở hữu.
+Gửi `Authorization: Bearer <access-token Identity>` và `Content-Type: application/json` cho body JSON. Không lưu token thực trong tài liệu, fixture hay Git. JWT_ACCESS_SECRET và issuer phải khớp Identity/Gateway. Business API yêu cầu authenticated và permission tương ứng practice:read/learn/exam; import yêu cầu ROLE_ADMIN cùng practice:import qua method security. Ánh xạ JWT sang authority PERM_ hiện có được giữ nguyên. Tài nguyên cá nhân lấy userId từ principal, không cho query userId thay chủ sở hữu.
 
 Security filter trả HTTP401/403 với shape `{success:false,message,data:null,timestamp}`. Controller advice trả business/validation lỗi theo ErrorResponse `{code,message,details,traceId,timestamp}`. Vì vậy frontend đọc cả HTTP status và body phù hợp, không giả định mọi lỗi có trường `data` hoặc mọi lỗi có `code`.
 
@@ -39,3 +39,7 @@ GET session/result có thể xử lý timeout; GET progress có thể bổ sung 
 ## Part 4 — Đối chiếu source
 
 Controller quyết định route và wrapper; request DTO chứa validation; service quyết định trạng thái/permission nghiệp vụ; migration quyết định invariant DB. Các file docs chỉ bổ sung giải thích, không sửa Java/YAML/SQL hay chạy database. Một số lỗi binding của Spring đi qua global handler; không cam kết tất cả input lỗi đều trả400 nếu chưa xác minh đúng nhánh code.
+
+## Authorization ngày 31 tháng 10 năm 2026
+
+Các endpoint trong tài liệu này áp dụng permission theo [ma trận Practice](authorization.md). GET nghiệp vụ dùng practice:read; thao tác học/ôn dùng practice:learn; thao tác trên phiên thi thử dùng practice:exam; import cần ROLE_ADMIN cùng practice:import. Giữ ownership và nghiệp vụ đã mô tả. Blueprint từng API theo Part 0–4 được liệt kê trong [mục lục](README.md).

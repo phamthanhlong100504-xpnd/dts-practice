@@ -86,3 +86,7 @@ Controller nhận principal/request và trả ApiResponse; DTO định nghĩa co
 Practice không sở hữu bài thi chính thức, public-profile người dùng hay projection Screen14/16. Tài khoản lấy từ Identity; câu hỏi/nội dung từ Content Builder; tiến độ tổng hợp ở Progress; lịch sử hợp nhất/EXP/analytics ở Result. Đổi dữ liệu của projection không phải sửa nguồn bài thi.
 
 Xem [LOCAL_SETUP.md](LOCAL_SETUP.md), [API blueprints](api-blueprint/README.md) và [migration catalog](db/MIGRATION_CATALOG.md). Các tài liệu/API-DOCS/OpenAPI snapshot cũ được giữ để tránh xóa nhầm lịch sử; file blueprint mới là mô tả các luồng bổ sung trong đợt này.
+
+## Phân quyền API
+
+55 mapping được rà soát theo [ma trận authorization](api-blueprint/authorization.md): 27 đọc, 15 học/ôn, 9 thao tác phiên thi thử, 3 import quản trị và 1 home public. Không thay service/worker, JWT filter, migration hoặc nghiệp vụ đã kiểm thử. Permission mới là phụ thuộc bàn giao cho người phụ trách Identity trước rollout.
