@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import static com.dts.practice.config.CaffeineCacheConfig.USER_PROGRAMS_CACHE;
 
 @Service
-@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = true)
 public class RedisMessageSubscriber implements MessageListener {
 
     private final CacheManager cacheManager;

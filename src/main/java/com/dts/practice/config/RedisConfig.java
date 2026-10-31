@@ -13,7 +13,7 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
-@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = true)
 public class RedisConfig {
 
     @Bean
@@ -49,6 +49,7 @@ public class RedisConfig {
                 messageListener,
                 new ChannelTopic("channel:user_program_events")
         );
+        container.setRecoveryInterval(5000L);
         return container;
     }
 }
