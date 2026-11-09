@@ -10,6 +10,10 @@ import java.util.Optional;
 
 public interface QuestionRepository extends JpaRepository<Question, Integer> {
 
+    // Only an image referenced by the currently published 600-question bank may receive a learner ticket.
+    boolean existsByBankVersionAndMediaFileId(String bankVersion, java.util.UUID mediaFileId);
+
+
     // Giữ các truy vấn cũ để không ảnh hưởng những nơi còn sử dụng chúng.
     List<Question> findByChapter(Integer chapter);
 
