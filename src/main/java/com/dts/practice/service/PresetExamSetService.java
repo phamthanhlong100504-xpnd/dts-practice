@@ -147,8 +147,9 @@ public class PresetExamSetService {
 
         // Xử lý tuần tự các POST cùng user và hạng GPLX.
         lockUserLicense(user.userId(), set.getLicenseClass());
-
         // Cùng preset và mode thì tiếp tục phiên hiện có.
+        // Do not reject a frozen, already-running attempt just because an
+        // administrator activated a newer preset version in the meantime.
         List<Exam> sameSetAttempts = presetExamAttemptRepository
                 .findByUserIdAndPresetExamSetIdInAndBankVersionOrderByStartedAtDesc(
                         user.userId(),
@@ -180,6 +181,11 @@ public class PresetExamSetService {
                 return current;
             }
         }
+
+        // A NEW attempt may use only the currently active version.  Locking the
+        // activation pointer here (after existing-session recovery) preserves
+        // historical attempts while making publication and new starts serialize.
+        assertActivePreset(set.getId());
 
         // Unique index áp dụng cho user + hạng, không giới hạn bank version.
         // Bài random hoặc preset khác cũng phải được trả về trong lỗi 409.
@@ -302,6 +308,22 @@ public class PresetExamSetService {
             )) {
                 statement.setLong(1, key);
                 statement.execute();
+            }
+        });
+    }
+
+    private void assertActivePreset(UUID versionId) {
+        entityManager.unwrap(Session.class).doWork(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "SELECT a.active_version_id FROM admin_preset_active_versions a " +
+                    "JOIN preset_exam_sets p ON p.logical_set_id=a.logical_set_id " +
+                    "WHERE p.id=? FOR SHARE OF a")) {
+                statement.setObject(1,versionId);
+                try (java.sql.ResultSet results=statement.executeQuery()) {
+                    if (!results.next() || !versionId.equals(results.getObject(1,UUID.class))) {
+                        throw BusinessException.notFound("Preset version is no longer active");
+                    }
+                }
             }
         });
     }

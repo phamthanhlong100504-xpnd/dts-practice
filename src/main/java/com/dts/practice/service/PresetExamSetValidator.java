@@ -34,7 +34,20 @@ public class PresetExamSetValidator {
         if (set.getStatus() != PresetExamSetStatus.PUBLISHED) {
             throw BusinessException.notFound("Preset exam set not found");
         }
+        return validateContent(set, presetQuestionRepository
+                .findByPresetExamSetIdOrderByQuestionOrderAsc(set.getId()));
+    }
 
+    /** Reuses precisely the learner preset matrix/eligibility validator for isolated drafts. */
+    @Transactional(readOnly = true)
+    public ValidatedPreset validateDraft(PresetExamSet set, List<PresetExamSetQuestion> entries) {
+        if (set.getStatus() != PresetExamSetStatus.DRAFT) {
+            throw BusinessException.conflict("Only a draft can be validated");
+        }
+        return validateContent(set, entries);
+    }
+
+    private ValidatedPreset validateContent(PresetExamSet set, List<PresetExamSetQuestion> entries) {
         if (!CURRENT_BANK.equals(set.getBankVersion())) {
             throw invalid(set, "không thuộc bộ câu hỏi hiện hành");
         }
@@ -52,12 +65,6 @@ public class PresetExamSetValidator {
         )) {
             throw invalid(set, "số câu hoặc thời gian không đúng ma trận");
         }
-
-        List<PresetExamSetQuestion> entries =
-                presetQuestionRepository
-                        .findByPresetExamSetIdOrderByQuestionOrderAsc(
-                                set.getId()
-                        );
 
         if (entries.size() != rule.totalQuestions()) {
             throw invalid(set, "không đủ số câu hỏi");

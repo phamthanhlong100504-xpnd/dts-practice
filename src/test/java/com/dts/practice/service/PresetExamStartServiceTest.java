@@ -9,6 +9,7 @@ import com.dts.practice.entity.Question;
 import com.dts.practice.enums.ExamStatus;
 import com.dts.practice.enums.PresetExamSetStatus;
 import com.dts.practice.exception.ActiveExamExistsException;
+import com.dts.practice.exception.BusinessException;
 import com.dts.practice.repository.ExamAnswerRepository;
 import com.dts.practice.repository.ExamRepository;
 import com.dts.practice.repository.PresetExamAttemptRepository;
@@ -29,6 +30,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -254,6 +256,55 @@ class PresetExamStartServiceTest {
         verify(statement).setLong(eq(1), anyLong());
         verify(statement).execute();
         verify(statement).close();
+    }
+
+    @Test
+    void inactiveVersionCannotStartNewAttemptEvenThoughHistoricalRowIsPublished()
+            throws Exception {
+        PresetExamSet set = givenPublishedSet();
+        givenSameSetAttempts(set, List.of());
+
+        // These are the real two JDBC statements, not the old single-lock mock.
+        Connection connection = mock(Connection.class);
+        PreparedStatement advisory = mock(PreparedStatement.class);
+        PreparedStatement activePointer = mock(PreparedStatement.class);
+        ResultSet found = mock(ResultSet.class);
+        when(connection.prepareStatement("SELECT pg_advisory_xact_lock(?)"))
+                .thenReturn(advisory);
+        when(connection.prepareStatement(startsWith("SELECT a.active_version_id")))
+                .thenReturn(activePointer);
+        when(activePointer.executeQuery()).thenReturn(found);
+        when(found.next()).thenReturn(true);
+        when(found.getObject(1, UUID.class)).thenReturn(UUID.randomUUID());
+        doAnswer(invocation -> {
+            Work work = invocation.getArgument(0);
+            work.execute(connection);
+            return null;
+        }).when(hibernateSession).doWork(any(Work.class));
+
+        assertThrows(BusinessException.class,
+                () -> service.startSession(user, setId, null));
+        verify(advisory).execute();
+        verify(activePointer).setObject(1, setId);
+        verify(activePointer).executeQuery();
+        verify(hibernateSession, times(2)).doWork(any(Work.class));
+        verify(examRepository, never()).saveAndFlush(any(Exam.class));
+        verifyNoInteractions(presetExamSetValidator, examAnswerRepository);
+    }
+
+    @Test
+    void runningOldVersionCanResumeAfterAdminActivatesAnotherVersion() {
+        PresetExamSet set = givenPublishedSet();
+        Exam running = existingAttempt(ExamStatus.IN_PROGRESS);
+        givenSameSetAttempts(set, List.of(running));
+        ExamSessionResponse session = givenSession(running, "IN_PROGRESS", "EXAM");
+
+        assertSame(session, service.startSession(user, setId, null));
+        // Only the user/license lock is needed for continuation of a frozen exam.
+        // The active-version guard must not run for this existing session.
+        verify(hibernateSession, times(1)).doWork(any(Work.class));
+        verify(examRepository, never()).saveAndFlush(any(Exam.class));
+        verifyNoInteractions(presetExamSetValidator, examAnswerRepository);
     }
 
     @Test
