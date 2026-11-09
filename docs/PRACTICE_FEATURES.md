@@ -90,3 +90,17 @@ Xem [LOCAL_SETUP.md](LOCAL_SETUP.md), [API blueprints](api-blueprint/README.md) 
 ## Phân quyền API
 
 55 mapping được rà soát theo [ma trận authorization](api-blueprint/authorization.md): 27 đọc, 15 học/ôn, 9 thao tác phiên thi thử, 3 import quản trị và 1 home public. Không thay service/worker, JWT filter, migration hoặc nghiệp vụ đã kiểm thử. Permission mới là phụ thuộc bàn giao cho người phụ trách Identity trước rollout.
+
+
+## Tình huống mô phỏng cần ôn lại
+
+Card02 tổng hợp MAX(score) từ các lượt COMPLETED tương thích theo user/bank/scoring: 0–4 cần ôn, chưa luyện hoặc đã từng đạt 5 điểm không cần ôn. Có tổng quan sáu chương, lọc/sort/phân trang ổn định và dùng chung bookmark Card01. Replay kết quả COMPLETED có API cấp URL riêng, không tạo lượt hay ghi lại điểm. Tái sử dụng V31, không thay dữ liệu/migration lý thuyết. [Contract và kiểm thử](api-blueprint/simulation_review_needed.md).
+
+
+## Card 03 — Tình huống đã đánh dấu
+
+Tổng quan và danh sách bookmark mô phỏng dùng chung PUT Card 01, giữ cả chưa luyện/0/5; không có migration mới. Xem [contract Card 03](api-blueprint/simulation_bookmarks.md).
+
+## Card05 random simulation mock exams (candidate)
+
+Separate RANDOM ten-video sessions, pinned 35/50 policy, verified playback, immutable result and read-only review. V32 and actual runtime/frontend acceptance are required. See [contract](api-blueprint/simulation_exams.md).

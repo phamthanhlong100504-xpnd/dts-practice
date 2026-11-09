@@ -1,0 +1,112 @@
+{
+  "ExampleKind": "Schematic request/response excerpts, not captured HTTP responses or a playable fixture. Use live IDs/nonces and server reactionAcknowledgement; no fake media time.",
+  "SkipRequest": {
+    "eventId": "00000000-0000-4000-8000-000000000001",
+    "position": 1,
+    "playbackEventId": "00000000-0000-4000-8000-000000000002",
+    "mediaTimeMs": 3000
+  },
+  "SkipResponseExcerpt": {
+    "receipt": {
+      "operation": "SKIP_INTRO",
+      "checkpointMs": 10000,
+      "appliedRevision": 2
+    },
+    "state": {
+      "protocolVersion": "video-shortcuts-v1",
+      "startAtMs": 10000,
+      "playbackEventId": "00000000-0000-4000-8000-000000000003",
+      "shortcutRevision": 2
+    }
+  },
+  "AdvanceRequest": {
+    "eventId": "00000000-0000-4000-8000-000000000004",
+    "position": 1,
+    "playbackEventId": "00000000-0000-4000-8000-000000000003",
+    "reactionAcknowledgement": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "AdvanceResponseExcerpt": {
+    "receipt": {
+      "operation": "ADVANCE_AFTER_REACTION",
+      "position": 1,
+      "appliedRevision": 3
+    },
+    "state": {
+      "position": 2,
+      "shortcutRevision": 3,
+      "completionReasons": {
+        "1": "ADVANCE_AFTER_REACTION"
+      },
+      "session": {
+        "completedScenarios": 1,
+        "currentPosition": 2,
+        "status": "IN_PROGRESS"
+      }
+    }
+  },
+  "Errors": [
+    {
+      "Http": 409,
+      "Body": {
+        "success": false,
+        "code": "SIMULATION_SHORTCUT_REACTION_ACK_REQUIRED",
+        "message": "REACTION_ACK_REQUIRED",
+        "timestamp": "2026-11-03T00:00:00Z"
+      }
+    },
+    {
+      "Http": 409,
+      "Body": {
+        "success": false,
+        "code": "SIMULATION_SHORTCUT_PLAYBACK_CHANGED",
+        "message": "PLAYBACK_CHANGED",
+        "timestamp": "2026-11-03T00:00:00Z"
+      }
+    },
+    {
+      "Http": 409,
+      "Body": {
+        "success": false,
+        "code": "SIMULATION_SHORTCUT_POSITION_CHANGED",
+        "message": "POSITION_CHANGED",
+        "timestamp": "2026-11-03T00:00:00Z"
+      }
+    },
+    {
+      "Http": 409,
+      "Body": {
+        "success": false,
+        "code": "SIMULATION_SHORTCUT_POLICY_LOCKED",
+        "message": "POLICY_LOCKED",
+        "timestamp": "2026-11-03T00:00:00Z"
+      }
+    },
+    {
+      "Http": 409,
+      "Body": {
+        "success": false,
+        "code": "SIMULATION_SHORTCUT_SCORING_BEFORE_INTRO_END",
+        "message": "SCORING_BEFORE_INTRO_END",
+        "timestamp": "2026-11-03T00:00:00Z"
+      }
+    },
+    {
+      "Http": 409,
+      "Body": {
+        "success": false,
+        "code": "SIMULATION_SHORTCUT_VIDEO_TOO_SHORT",
+        "message": "VIDEO_TOO_SHORT",
+        "timestamp": "2026-11-03T00:00:00Z"
+      }
+    },
+    {
+      "Http": 409,
+      "Body": {
+        "success": false,
+        "code": "SIMULATION_SHORTCUT_EVENT_CONFLICT",
+        "message": "EVENT_CONFLICT",
+        "timestamp": "2026-11-03T00:00:00Z"
+      }
+    }
+  ]
+}

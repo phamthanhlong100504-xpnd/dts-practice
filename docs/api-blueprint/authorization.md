@@ -6,6 +6,10 @@ Rà soát đủ 55 mapping của 25 controller tại commit 6373cc8. Có 51 API 
 
 ## Part 1 — API Contract
 
+Card 01 bổ sung hai GET độc lập với quyền lý thuyết: `/api/v1/simulations/catalog` cần `simulations:read`; `/api/v1/simulations/scenarios/{scenarioId}/thumbnail` cần cả `simulations:read` và `media:read`. Chủ thể theo JWT, ticket thumbnail gắn đúng ngân hàng/tình huống. Chi tiết: [simulation_catalog.md](simulation_catalog.md). Quyền mới đã được Identity cấp qua V12; không cần mở rộng quyền import để học viên xem thumbnail.
+
+Các API lượt luyện Card 01 kiểm tra thêm `simulations:learn` cho create/start/heartbeat/response/complete/interrupt/cancel/bookmark/cursor; playback cần cả `media:read`. Đọc attempt/result chỉ tra theo đúng user; role admin không bypass ownership. Mọi API đọc/ghi và lỗi chính thức nằm trong [simulation_learning.md](simulation_learning.md).
+
 | Method | Path | Authorization | Blueprint |
 | --- | --- | --- | --- |
 | GET | /api/v1/learning/chapters/{chapterId}/bookmarks | practice:read | [ChapterBookmarkController.list](chapter_bookmark_list.md) |
@@ -86,3 +90,13 @@ JWT hiện tại chưa có permission mới sẽ nhận 403 sau khi chạy sourc
 Task002 xác thực Gateway và Task004 refactor nguồn questions chưa nằm trong source baseline này. Khi nhóm tích hợp các thay đổi đó phải đối chiếu principal/authority, nguồn API và test lại; không tự bỏ JWT filter hoặc đổi nguồn câu hỏi trong task phân quyền.
 
 Test gồm JWT thực qua MockMvc trên mọi mapping, ma trận thiếu/đủ/sai nhóm quyền, role import, giả mạo header, ownership service và hồi quy source hiện có. Kiểm report XML thật; không chỉ dựa Maven exit vì pom baseline có testFailureIgnore=true. API/runtime/UI chỉ nghiệm thu sau khi chạy trên môi trường tích hợp thật.
+
+
+## Card02 và replay chỉ đọc
+
+GET /api/v1/simulations/review-needed/overview cần simulations:read. GET /review-needed và GET /attempts/{attemptId}/replay dưới cùng prefix cần simulations:read + media:read, không yêu cầu simulations:learn. Replay chỉ nhận owned COMPLETED và không ghi trạng thái học. Không có permission Identity mới. [Contract Card02](simulation_review_needed.md).
+
+
+### Card 03 — Bookmark mô phỏng
+
+GET `/simulations/bookmarks/overview` cần `simulations:read`; GET `/simulations/bookmarks` cần thêm `media:read`. PUT `/simulations/bookmarks/{scenarioId}` giữ `simulations:read` + `simulations:learn` và body `{licenseClass,bankVersion,bookmarked}`. User từ JWT, không thêm permission. Xem [Card 03](simulation_bookmarks.md).

@@ -1,6 +1,6 @@
 # Practice API blueprints
 
-Nguồn đối chiếu: current local → `main` tại commit `237b9f5a27939e5dba946a656cae50e6d08f7d75`. Nhánh feature trước khi đóng gói: `19db6ccff8596d24f5d20676930818db47375a51`. Các file này mô tả code hiện có, không mở rộng API.
+Tài liệu hiện hành trên `feat/simulation-practice`, kế thừa bản phân quyền `2bc7fd78e8d41e8070da3ef924ec8989aa3dd9d0`. Các API lý thuyết tiếp tục dùng contract đã chốt; catalogue mô phỏng bổ sung kết nối ngân hàng PUBLISHED và thumbnail trước attempt.
 
 | Nhóm | Tài liệu |
 | --- | --- |
@@ -14,13 +14,18 @@ Nguồn đối chiếu: current local → `main` tại commit `237b9f5a27939e5db
 | Biển báo, mẹo ghi nhớ và import tham chiếu | [reference_content.md](reference_content.md) |
 | Quy ước chung | [contract_notes.md](contract_notes.md) |
 | DTO request/response | [dto_reference.md](dto_reference.md) |
+| Catalogue mô phỏng và thumbnail | [simulation_catalog.md](simulation_catalog.md) |
+| Lượt luyện, playback, chấm điểm và tiến độ mô phỏng | [simulation_learning.md](simulation_learning.md) |
+| Card02 cần ôn lại và replay kết quả chỉ đọc | [simulation_review_needed.md](simulation_review_needed.md) |
 
-Danh mục bao phủ **54 route/method** của **24 controller** mới/thay đổi hoặc thuộc thay đổi feature so với main. Các API cũ khác giữ tài liệu hiện có; không lấy practice-openapi-live.json làm chứng cứ runtime mới.
+Danh mục dưới đây liên kết các API lý thuyết hiện có và hai API catalogue mô phỏng mới. Không lấy practice-openapi-live.json làm chứng cứ runtime mới.
 
 ## Authorization và blueprint từng API
 
 | Method | Path | Authorization | Blueprint |
 | --- | --- | --- | --- |
+| GET | /api/v1/simulations/catalog | simulations:read | [Catalogue mô phỏng](simulation_catalog.md) |
+| GET | /api/v1/simulations/scenarios/{scenarioId}/thumbnail | simulations:read và media:read | [Thumbnail mô phỏng](simulation_catalog.md) |
 | GET | /api/v1/learning/chapters/{chapterId}/bookmarks | practice:read | [ChapterBookmarkController.list](chapter_bookmark_list.md) |
 | PUT | /api/v1/learning/chapters/{chapterId}/bookmarks/{questionId} | practice:learn | [ChapterBookmarkController.set](chapter_bookmark_set.md) |
 | GET | /api/v1/learning/chapters/{chapterId}/answers | practice:read | [ChapterLearnedAnswerQueryController.getAnswers](chapter_learned_answer_query_get_answers.md) |
@@ -78,3 +83,8 @@ Danh mục bao phủ **54 route/method** của **24 controller** mới/thay đ�
 | POST | /api/v1/wrong-questions/sessions/{sessionId}/answers | practice:learn | [WrongReviewSessionController.submitAnswer](wrong_review_session_submit_answer.md) |
 
 Xem [ma trận và rollout](authorization.md).
+
+
+- [Card 03: Tình huống đã đánh dấu](simulation_bookmarks.md): tổng quan/danh sách, bookmark dùng chung và đồng bộ Card 01/02. [OpenAPI](simulation-bookmarks.openapi.json).
+
+Card05 candidate: [random simulation exams](simulation_exams.md) and [OpenAPI](simulation-exams.openapi.json).

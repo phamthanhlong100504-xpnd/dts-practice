@@ -1,0 +1,3302 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "DTS simulation exams — Card05 shared engine and Card06 PRESET",
+    "version": "card06-candidate-v1",
+    "description": "Source contract, not runtime evidence. Read simulation_exams.md for mandatory start/heartbeat/restart and frontend changes."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Native Practice or existing Gateway preserving the Practice path"
+    }
+  ],
+  "paths": {
+    "/api/v1/simulation-exams/preparation": {
+      "get": {
+        "operationId": "simulationExam_preparation",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/sessions/active": {
+      "get": {
+        "operationId": "simulationExam_active",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActiveResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/sessions": {
+      "post": {
+        "operationId": "simulationExam_create",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam",
+          "media:read"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Create"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/sessions/{sessionId}": {
+      "get": {
+        "operationId": "simulationExam_get",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/sessions/{sessionId}/current/playback": {
+      "get": {
+        "operationId": "simulationExam_playback",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam",
+          "media:read"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/sessions/{sessionId}/current/restart": {
+      "post": {
+        "operationId": "simulationExam_restart",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Restart"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/sessions/{sessionId}/current/start": {
+      "post": {
+        "operationId": "simulationExam_start",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Event"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/sessions/{sessionId}/current/heartbeat": {
+      "post": {
+        "operationId": "simulationExam_heartbeat",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Event"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/sessions/{sessionId}/reaction": {
+      "put": {
+        "operationId": "simulationExam_reaction",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Event"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/sessions/{sessionId}/complete-current": {
+      "post": {
+        "operationId": "simulationExam_complete",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Event"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/sessions/{sessionId}/submit": {
+      "post": {
+        "operationId": "simulationExam_submit",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Command"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/sessions/{sessionId}/cancel": {
+      "post": {
+        "operationId": "simulationExam_cancel",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Command"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/sessions/{sessionId}/result": {
+      "get": {
+        "operationId": "simulationExam_result",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/sessions/{sessionId}/review": {
+      "get": {
+        "operationId": "simulationExam_review",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/sessions/{sessionId}/review/{position}/playback": {
+      "get": {
+        "operationId": "simulationExam_reviewPlayback",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "position",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            }
+          },
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam",
+          "media:read"
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing ApiResponse envelope; no-store",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simulation-exams/presets": {
+      "get": {
+        "operationId": "getPresetList",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "B"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam"
+        ],
+        "responses": {
+          "200": {
+            "description": "No-store actual contract; runtime response examples pending acceptance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresetListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read published preset catalogue and exact-version latest completed state"
+      }
+    },
+    "/api/v1/simulation-exams/presets/{presetSetId}": {
+      "get": {
+        "operationId": "getPresetDetail",
+        "tags": [
+          "Simulation mock exams"
+        ],
+        "parameters": [
+          {
+            "name": "presetSetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "B"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "x-required-permissions": [
+          "simulations:read",
+          "simulations:exam"
+        ],
+        "responses": {
+          "200": {
+            "description": "No-store actual contract; runtime response examples pending acceptance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresetDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body/UUID; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Identity JWT; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing rights or unsupported license; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or non-owned session; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State, idempotency or playback conflict; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Source, media or transport unavailable; shared errors may retain the existing security/BusinessException envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read selected published preset preparation without creating a session"
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Scope": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "licenseClass": {
+            "type": "string"
+          },
+          "bankVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "licenseClass",
+          "bankVersion"
+        ]
+      },
+      "Policy": {
+        "type": "object",
+        "properties": {
+          "totalScenarios": {
+            "type": "integer",
+            "enum": [
+              10
+            ]
+          },
+          "maxScenarioScore": {
+            "type": "integer",
+            "enum": [
+              5
+            ]
+          },
+          "maxTotalScore": {
+            "type": "integer",
+            "enum": [
+              50
+            ]
+          },
+          "passingScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50
+          },
+          "policyVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "totalScenarios",
+          "maxScenarioScore",
+          "maxTotalScore",
+          "passingScore",
+          "policyVersion"
+        ]
+      },
+      "Position": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NOT_STARTED",
+              "CURRENT",
+              "COMPLETED"
+            ]
+          }
+        },
+        "required": [
+          "position",
+          "status"
+        ]
+      },
+      "PlaybackPolicy": {
+        "type": "object",
+        "properties": {
+          "allowPause": {
+            "type": "boolean"
+          },
+          "allowSeek": {
+            "type": "boolean"
+          },
+          "allowFullscreen": {
+            "type": "boolean"
+          },
+          "allowHintsWhilePlaying": {
+            "type": "boolean"
+          },
+          "heartbeatIntervalMs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxHeartbeatGapMs": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "allowPause",
+          "allowSeek",
+          "allowFullscreen",
+          "allowHintsWhilePlaying",
+          "heartbeatIntervalMs",
+          "maxHeartbeatGapMs"
+        ]
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "RANDOM",
+              "PRESET"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "IN_PROGRESS",
+              "READY_TO_SUBMIT",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "bankVersion": {
+            "type": "string"
+          },
+          "scoringVersion": {
+            "type": "string"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/Policy"
+          },
+          "totalScenarios": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 10
+          },
+          "completedScenarios": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "currentPosition": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "maxTotalScore": {
+            "type": "integer",
+            "minimum": 50,
+            "maximum": 50
+          },
+          "responseRecorded": {
+            "type": "boolean"
+          },
+          "playbackEventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "playbackState": {
+            "type": "string",
+            "enum": [
+              "NOT_STARTED",
+              "READY",
+              "PLAYING",
+              "INTERRUPTED",
+              "FINISHED"
+            ]
+          },
+          "requiresRestart": {
+            "type": "boolean"
+          },
+          "playbackPolicy": {
+            "$ref": "#/components/schemas/PlaybackPolicy"
+          },
+          "positions": {
+            "type": "array",
+            "minItems": 10,
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/Position"
+            }
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "preset": {
+            "$ref": "#/components/schemas/PresetRef"
+          },
+          "presetSetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "presetVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "presetTitle": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "sessionId",
+          "mode",
+          "status",
+          "bankVersion",
+          "scoringVersion",
+          "policy",
+          "totalScenarios",
+          "completedScenarios",
+          "currentPosition",
+          "maxTotalScore",
+          "responseRecorded",
+          "playbackEventId",
+          "playbackState",
+          "requiresRestart",
+          "playbackPolicy",
+          "positions",
+          "startedAt"
+        ]
+      },
+      "Preparation": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "bankVersion": {
+            "type": "string"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/Policy"
+          },
+          "activeSession": {
+            "$ref": "#/components/schemas/Session",
+            "nullable": true
+          }
+        },
+        "required": [
+          "scope",
+          "bankVersion",
+          "policy"
+        ]
+      },
+      "Active": {
+        "type": "object",
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/Session",
+            "nullable": true
+          }
+        },
+        "required": []
+      },
+      "Playback": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "playbackEventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "videoUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mimeType": {
+            "type": "string",
+            "enum": [
+              "video/mp4"
+            ]
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3600000
+          },
+          "responseRecorded": {
+            "type": "boolean"
+          },
+          "restartAtMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Legacy/full restart is0. After explicit shortcuts-v1 skip ACK, the current approved segment may start at10000. URL renewal never authorizes seeking by itself."
+          }
+        },
+        "required": [
+          "sessionId",
+          "position",
+          "playbackEventId",
+          "videoUrl",
+          "expiresAt",
+          "mimeType",
+          "durationMs",
+          "responseRecorded",
+          "restartAtMs"
+        ]
+      },
+      "ResultItem": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "maxScore": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "position",
+          "score",
+          "maxScore"
+        ]
+      },
+      "Result": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "RANDOM",
+              "PRESET"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETED"
+            ]
+          },
+          "bankVersion": {
+            "type": "string"
+          },
+          "scoringVersion": {
+            "type": "string"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/Policy"
+          },
+          "totalScenarios": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 10
+          },
+          "completedScenarios": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 10
+          },
+          "totalScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50
+          },
+          "maxTotalScore": {
+            "type": "integer",
+            "minimum": 50,
+            "maximum": 50
+          },
+          "passingScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "resultStatus": {
+            "type": "string",
+            "enum": [
+              "PASSED",
+              "FAILED"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "minItems": 10,
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/ResultItem"
+            }
+          },
+          "preset": {
+            "$ref": "#/components/schemas/PresetRef"
+          },
+          "presetSetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "presetVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "presetTitle": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "sessionId",
+          "mode",
+          "status",
+          "bankVersion",
+          "scoringVersion",
+          "policy",
+          "totalScenarios",
+          "completedScenarios",
+          "totalScore",
+          "maxTotalScore",
+          "passingScore",
+          "passed",
+          "resultStatus",
+          "startedAt",
+          "completedAt",
+          "items"
+        ]
+      },
+      "Segment": {
+        "type": "object",
+        "properties": {
+          "startMs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "endMs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "endInclusive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "startMs",
+          "endMs",
+          "score",
+          "endInclusive"
+        ]
+      },
+      "ReviewItem": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "scenarioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scenarioNumber": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 120
+          },
+          "title": {
+            "type": "string"
+          },
+          "chapterName": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "maxScore": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 5
+          },
+          "responseRecorded": {
+            "type": "boolean"
+          },
+          "firstResponseMs": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "scoringSegments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Segment"
+            }
+          },
+          "hazardSign": {
+            "type": "string"
+          },
+          "recognitionTip": {
+            "type": "string"
+          },
+          "scoringVersion": {
+            "type": "string"
+          },
+          "playbackPath": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "position",
+          "scenarioId",
+          "scenarioNumber",
+          "title",
+          "chapterName",
+          "score",
+          "maxScore",
+          "responseRecorded",
+          "durationMs",
+          "scoringSegments",
+          "hazardSign",
+          "recognitionTip",
+          "scoringVersion",
+          "playbackPath"
+        ]
+      },
+      "Review": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/Result"
+          },
+          "items": {
+            "type": "array",
+            "minItems": 10,
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/ReviewItem"
+            }
+          }
+        },
+        "required": [
+          "result",
+          "items"
+        ]
+      },
+      "Create": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "RANDOM"
+                ]
+              },
+              "licenseClass": {
+                "type": "string"
+              },
+              "bankVersion": {
+                "type": "string",
+                "maxLength": 96
+              }
+            },
+            "required": [
+              "mode",
+              "licenseClass"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "PRESET"
+                ]
+              },
+              "licenseClass": {
+                "type": "string"
+              },
+              "bankVersion": {
+                "type": "string",
+                "maxLength": 96
+              },
+              "presetSetId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "presetVersionId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "mode",
+              "licenseClass",
+              "presetSetId",
+              "presetVersionId"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Both modes retain required licenseClass from Card05. PRESET additionally selects an exact set/version; server fixes all ten positions."
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "playbackEventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mediaTimeMs": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "eventId",
+          "position",
+          "playbackEventId",
+          "mediaTimeMs"
+        ],
+        "additionalProperties": false
+      },
+      "Restart": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "playbackEventId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "eventId",
+          "position",
+          "playbackEventId"
+        ],
+        "additionalProperties": false
+      },
+      "Command": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "eventId"
+        ],
+        "additionalProperties": false
+      },
+      "ExamError": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "activeSessionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "success",
+          "code",
+          "message",
+          "timestamp"
+        ]
+      },
+      "PreparationResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Preparation",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "ActiveResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Active",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "SessionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Session",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "PlaybackResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Playback",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "ResultResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Result",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "ReviewResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Review",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "PresetRef": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "presetSetId",
+          "presetVersionId",
+          "code",
+          "title",
+          "displayOrder",
+          "manifestSha256",
+          "sourceVersion",
+          "sourceSha256"
+        ],
+        "properties": {
+          "presetSetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "presetVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "displayOrder": {
+            "type": "integer"
+          },
+          "manifestSha256": {
+            "type": "string"
+          },
+          "sourceVersion": {
+            "type": "string"
+          },
+          "sourceSha256": {
+            "type": "string"
+          }
+        }
+      },
+      "PresetItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "presetSetId",
+          "presetVersionId",
+          "code",
+          "title",
+          "displayOrder",
+          "status",
+          "totalScenarios",
+          "maxTotalScore",
+          "passingScore",
+          "hasCompletedAttempt",
+          "latestCompletedSessionId",
+          "latestCompletedScore",
+          "latestCompletedPassed",
+          "latestCompletedAt",
+          "activeSessionId",
+          "attemptStatus"
+        ],
+        "properties": {
+          "presetSetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "presetVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "displayOrder": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PUBLISHED"
+            ]
+          },
+          "totalScenarios": {
+            "type": "integer",
+            "enum": [
+              10
+            ]
+          },
+          "maxTotalScore": {
+            "type": "integer",
+            "enum": [
+              50
+            ]
+          },
+          "passingScore": {
+            "type": "integer",
+            "enum": [
+              35
+            ]
+          },
+          "hasCompletedAttempt": {
+            "type": "boolean"
+          },
+          "latestCompletedSessionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "latestCompletedScore": {
+            "type": "integer",
+            "nullable": true
+          },
+          "latestCompletedPassed": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "latestCompletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "activeSessionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "attemptStatus": {
+            "type": "string",
+            "enum": [
+              "NOT_STARTED",
+              "IN_PROGRESS",
+              "PASSED",
+              "FAILED"
+            ]
+          }
+        }
+      },
+      "PresetList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scope",
+          "bankVersion",
+          "totalPublishedSets",
+          "items",
+          "activeSession"
+        ],
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "bankVersion": {
+            "type": "string"
+          },
+          "totalPublishedSets": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresetItem"
+            }
+          },
+          "activeSession": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Session"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "PresetDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scope",
+          "preset",
+          "mode",
+          "maxScorePerScenario",
+          "canStart",
+          "unavailableReason",
+          "activeSession"
+        ],
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "preset": {
+            "$ref": "#/components/schemas/PresetItem"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "PRESET"
+            ]
+          },
+          "maxScorePerScenario": {
+            "type": "integer",
+            "enum": [
+              5
+            ]
+          },
+          "canStart": {
+            "type": "boolean"
+          },
+          "unavailableReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "activeSession": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Session"
+              }
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "PresetListResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PresetList"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "PresetDetailResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PresetDetail"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      }
+    }
+  }
+}
