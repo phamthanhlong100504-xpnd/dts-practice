@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -29,6 +30,7 @@ public class ChapterBookmarkController {
     private final ChapterBookmarkService chapterBookmarkService;
 
     @GetMapping("/{chapterId}/bookmarks")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<ChapterBookmarksResponse> list(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable int chapterId,
@@ -44,6 +46,7 @@ public class ChapterBookmarkController {
     }
 
     @PutMapping("/{chapterId}/bookmarks/{questionId}")
+    @PreAuthorize("hasAuthority('PERM_practice:learn')")
     public ApiResponse<ChapterBookmarkResponse> set(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable int chapterId,

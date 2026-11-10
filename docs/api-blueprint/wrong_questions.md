@@ -15,7 +15,7 @@ Vòng ôn lưu snapshot tập câu, đáp án và cursor theo sessionId. Start c
 ### `GET /api/v1/questions/wrong/overview`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<WrongQuestionOverviewResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/WrongQuestionController.java`](../../src/main/java/com/dts/practice/controller/WrongQuestionController.java), method `getOverview`.
 
 Count distinct questions answered incorrectly
@@ -30,7 +30,7 @@ DTO: `WrongQuestionOverviewResponse`.
 ### `GET /api/v1/questions/wrong`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<List<WrongQuestionResponse>>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/WrongQuestionController.java`](../../src/main/java/com/dts/practice/controller/WrongQuestionController.java), method `getWrongQuestions`.
 
 List distinct questions answered incorrectly
@@ -45,7 +45,7 @@ DTO: `WrongQuestionResponse`.
 ### `POST /api/v1/wrong-questions/sessions`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<WrongReviewSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:learn`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/WrongReviewSessionController.java`](../../src/main/java/com/dts/practice/controller/WrongReviewSessionController.java), method `start`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -58,7 +58,7 @@ DTO: `StartWrongReviewRequest`, `WrongReviewSessionResponse`.
 ### `GET /api/v1/wrong-questions/sessions/{sessionId}`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<WrongReviewSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/WrongReviewSessionController.java`](../../src/main/java/com/dts/practice/controller/WrongReviewSessionController.java), method `get`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -71,7 +71,7 @@ DTO: `WrongReviewSessionResponse`.
 ### `POST /api/v1/wrong-questions/sessions/{sessionId}/answers`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<WrongReviewAnswerResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:learn`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/WrongReviewSessionController.java`](../../src/main/java/com/dts/practice/controller/WrongReviewSessionController.java), method `submitAnswer`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -85,7 +85,7 @@ DTO: `SubmitWrongReviewAnswerRequest`, `WrongReviewAnswerResponse`.
 ### `PUT /api/v1/wrong-questions/sessions/{sessionId}/cursor`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<WrongReviewSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:learn`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/WrongReviewSessionController.java`](../../src/main/java/com/dts/practice/controller/WrongReviewSessionController.java), method `saveCursor`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -99,7 +99,7 @@ DTO: `SaveWrongReviewCursorRequest`, `WrongReviewSessionResponse`.
 ### `POST /api/v1/wrong-questions/sessions/{sessionId}/finish`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<WrongReviewSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:learn`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/WrongReviewSessionController.java`](../../src/main/java/com/dts/practice/controller/WrongReviewSessionController.java), method `finish`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -116,3 +116,7 @@ DTO: `WrongReviewSessionResponse`.
 ## Part 4 — Lưu trữ và triển khai
 
 Các service và bảng liên quan được tổng hợp trong [danh mục chức năng](../PRACTICE_FEATURES.md) và [migration catalog](../db/MIGRATION_CATALOG.md). Chạy migration theo thứ tự version, giữ nguyên checksum. Xem [LOCAL_SETUP.md](../LOCAL_SETUP.md) để cấu hình DB/Kafka/Progress và nhập dữ liệu. Tài liệu này không tạo endpoint hay thay đổi runtime.
+
+## Authorization ngày 31 tháng 10 năm 2026
+
+Các endpoint trong tài liệu này áp dụng permission theo [ma trận Practice](authorization.md). GET nghiệp vụ dùng practice:read; thao tác học/ôn dùng practice:learn; thao tác trên phiên thi thử dùng practice:exam; import cần ROLE_ADMIN cùng practice:import. Giữ ownership và nghiệp vụ đã mô tả. Blueprint từng API theo Part 0–4 được liệt kê trong [mục lục](README.md).

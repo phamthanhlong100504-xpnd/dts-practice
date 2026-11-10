@@ -599,7 +599,10 @@ public record LicenseCatalogItemResponse(
         @Schema(description = "Study counts match the curriculum and exam quotas can be filled")
         boolean bankCountsMatch,
         @Schema(description = "The current bank has enough eligible questions to generate an exam")
-        boolean examAvailable
+        boolean examAvailable,
+        boolean simulationEnabled,
+        boolean simulationReady,
+        String simulationBankVersion
 )
 ```
 

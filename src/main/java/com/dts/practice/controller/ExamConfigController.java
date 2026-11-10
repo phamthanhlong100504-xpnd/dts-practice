@@ -7,6 +7,7 @@ import com.dts.practice.service.ExamMatrix;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,6 +23,7 @@ public class ExamConfigController {
 
     @GetMapping("/config")
     @Operation(summary = "Get the canonical exam rules for a license class")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<ExamConfigResponse> getConfig(
             @RequestParam("examType") String examType
     ) {

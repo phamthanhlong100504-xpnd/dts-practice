@@ -17,7 +17,7 @@ Vòng ôn là luồng riêng với học tích lũy theo chương; không dùng 
 ### `POST /api/v1/learning/chapters/{chapterId}/review-sessions`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ChapterReviewSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:learn`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ChapterReviewSessionController.java`](../../src/main/java/com/dts/practice/controller/ChapterReviewSessionController.java), method `start`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -31,7 +31,7 @@ DTO: `ChapterReviewSessionResponse`, `StartChapterReviewRequest`.
 ### `GET /api/v1/learning/chapters/{chapterId}/review-sessions/{sessionId}`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ChapterReviewSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ChapterReviewSessionController.java`](../../src/main/java/com/dts/practice/controller/ChapterReviewSessionController.java), method `get`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -45,7 +45,7 @@ DTO: `ChapterReviewSessionResponse`.
 ### `POST /api/v1/learning/chapters/{chapterId}/review-sessions/{sessionId}/answers`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ChapterReviewSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:learn`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ChapterReviewSessionController.java`](../../src/main/java/com/dts/practice/controller/ChapterReviewSessionController.java), method `answer`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -60,7 +60,7 @@ DTO: `ChapterReviewSessionResponse`, `SubmitChapterReviewAnswerRequest`.
 ### `PUT /api/v1/learning/chapters/{chapterId}/review-sessions/{sessionId}/cursor`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ChapterReviewSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:learn`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ChapterReviewSessionController.java`](../../src/main/java/com/dts/practice/controller/ChapterReviewSessionController.java), method `cursor`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -75,7 +75,7 @@ DTO: `ChapterReviewSessionResponse`, `SaveChapterReviewCursorRequest`.
 ### `POST /api/v1/learning/chapters/{chapterId}/review-sessions/{sessionId}/finish`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<ChapterReviewSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:learn`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/ChapterReviewSessionController.java`](../../src/main/java/com/dts/practice/controller/ChapterReviewSessionController.java), method `finish`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -93,3 +93,7 @@ DTO: `ChapterReviewSessionResponse`.
 ## Part 4 — Lưu trữ và triển khai
 
 Các service và bảng liên quan được tổng hợp trong [danh mục chức năng](../PRACTICE_FEATURES.md) và [migration catalog](../db/MIGRATION_CATALOG.md). Chạy migration theo thứ tự version, giữ nguyên checksum. Xem [LOCAL_SETUP.md](../LOCAL_SETUP.md) để cấu hình DB/Kafka/Progress và nhập dữ liệu. Tài liệu này không tạo endpoint hay thay đổi runtime.
+
+## Authorization ngày 31 tháng 10 năm 2026
+
+Các endpoint trong tài liệu này áp dụng permission theo [ma trận Practice](authorization.md). GET nghiệp vụ dùng practice:read; thao tác học/ôn dùng practice:learn; thao tác trên phiên thi thử dùng practice:exam; import cần ROLE_ADMIN cùng practice:import. Giữ ownership và nghiệp vụ đã mô tả. Blueprint từng API theo Part 0–4 được liệt kê trong [mục lục](README.md).

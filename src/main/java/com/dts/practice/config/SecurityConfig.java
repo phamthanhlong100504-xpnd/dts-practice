@@ -47,6 +47,8 @@ public class SecurityConfig {
                 .requestMatchers("/question-images/**").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/api-docs", "/api-docs/**", "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-resources/**").permitAll()
+                // Dedicated HMAC is mandatory inside the release controller; no user JWT on service calls.
+                .requestMatchers("/api/v1/questions/internal/admin-releases/simulation/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .anyRequest().authenticated()
             )

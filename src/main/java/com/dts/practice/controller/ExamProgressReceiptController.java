@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +32,7 @@ public class ExamProgressReceiptController {
     @Operation(
             summary = "Get the canonical progress receipt for a finished exam"
     )
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<ExamProgressReceiptResponse> getProgress(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID examId

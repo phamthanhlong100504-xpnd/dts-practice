@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,6 +29,7 @@ public class WrongQuestionController {
 
     @GetMapping("/overview")
     @Operation(summary = "Count distinct questions answered incorrectly")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<WrongQuestionOverviewResponse> getOverview(
             @AuthenticationPrincipal JwtUserDetails user,
             @RequestParam String licenseClass
@@ -42,6 +44,7 @@ public class WrongQuestionController {
 
     @GetMapping
     @Operation(summary = "List distinct questions answered incorrectly")
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<List<WrongQuestionResponse>> getWrongQuestions(
             @AuthenticationPrincipal JwtUserDetails user,
             @RequestParam String licenseClass

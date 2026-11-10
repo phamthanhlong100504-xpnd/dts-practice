@@ -509,7 +509,7 @@ public class ExamService {
 
         Instant answeredAt = Instant.now();
         if ("PRACTICE".equals(exam.getMode())
-                && CURRENT_BANK.equals(exam.getBankVersion())) {
+                && TheoryBankScoringPolicy.usesModernExamMatrix(exam.getBankVersion())) {
             wrongQuestionProgressService.recordAnswer(
                     userId,
                     exam.getExamType(),
@@ -849,7 +849,7 @@ public class ExamService {
             Exam exam,
             List<ExamAnswer> answers
     ) {
-        if (!CURRENT_BANK.equals(exam.getBankVersion())) {
+        if (!TheoryBankScoringPolicy.usesModernExamMatrix(exam.getBankVersion())) {
             return;
         }
 
@@ -971,7 +971,7 @@ public class ExamService {
             return false;
         }
 
-        if (CURRENT_BANK.equals(exam.getBankVersion())) {
+        if (TheoryBankScoringPolicy.usesModernExamMatrix(exam.getBankVersion())) {
             return passed(exam, answers, Map.of());
         }
 
@@ -1004,9 +1004,7 @@ public class ExamService {
                 questionMapper.toResponse(question);
 
         boolean critical =
-                CURRENT_BANK.equals(
-                        exam.getBankVersion()
-                )
+                TheoryBankScoringPolicy.usesModernExamMatrix(exam.getBankVersion())
                         ? Objects.equals(
                                 exam.getCriticalQuestionId(),
                                 question.getId()
@@ -1142,9 +1140,7 @@ public class ExamService {
             );
             detail.put(
                     "isCritical",
-                    CURRENT_BANK.equals(
-                            exam.getBankVersion()
-                    )
+                    TheoryBankScoringPolicy.usesModernExamMatrix(exam.getBankVersion())
                             ? Objects.equals(
                                     exam.getCriticalQuestionId(),
                                     question.getId()
@@ -1200,9 +1196,7 @@ public class ExamService {
             Map<Integer, Question> byId
     ) {
         int required =
-                CURRENT_BANK.equals(
-                        exam.getBankVersion()
-                )
+                TheoryBankScoringPolicy.usesModernExamMatrix(exam.getBankVersion())
                         ? ExamMatrix.forClass(
                                 exam.getExamType()
                         ).requiredCorrect()
@@ -1222,9 +1216,7 @@ public class ExamService {
             List<ExamAnswer> answers,
             Map<Integer, Question> byId
     ) {
-        if (CURRENT_BANK.equals(
-                exam.getBankVersion()
-        )) {
+        if (TheoryBankScoringPolicy.usesModernExamMatrix(exam.getBankVersion())) {
             return answers.stream()
                     .anyMatch(answer ->
                             Objects.equals(

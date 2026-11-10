@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,6 +33,7 @@ public class ChapterLearningController {
     private final ChapterLearningService chapterLearningService;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<ChapterLearningOverviewResponse> overview(
             @AuthenticationPrincipal JwtUserDetails user,
             @RequestParam String licenseClass
@@ -42,6 +44,7 @@ public class ChapterLearningController {
     }
 
     @PostMapping("/{chapterId}/answers")
+    @PreAuthorize("hasAuthority('PERM_practice:learn')")
     public ApiResponse<ChapterLearningAnswerResponse> answer(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable int chapterId,
@@ -55,6 +58,7 @@ public class ChapterLearningController {
     }
 
     @PutMapping("/{chapterId}/cursor")
+    @PreAuthorize("hasAuthority('PERM_practice:learn')")
     public ApiResponse<ChapterLearningCursorResponse> saveCursor(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable int chapterId,

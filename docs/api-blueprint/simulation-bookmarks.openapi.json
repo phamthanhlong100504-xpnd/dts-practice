@@ -1,0 +1,991 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "DTS Card03 simulation bookmarks",
+    "version": "2026-11-02.v1",
+    "description": "Reviewed-source contract: two new read APIs and the unchanged shared Card01 PUT. Schema is not a live Swagger export or test/runtime acceptance evidence."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8888/api/practice/v1",
+      "description": "Local Gateway; use the existing frontend HTTP/auth client"
+    },
+    {
+      "url": "http://localhost:8087/api/v1",
+      "description": "Native Practice, diagnosis only"
+    }
+  ],
+  "security": [
+    {
+      "IdentityBearer": []
+    }
+  ],
+  "paths": {
+    "/simulations/bookmarks/overview": {
+      "get": {
+        "operationId": "getSimulationBookmarkOverview",
+        "summary": "BookmarkOverview",
+        "parameters": [
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "bankVersion",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 96,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ApiResponse success, no-store. Global totals are independent of the chapter filter.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookmarkOverviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid license, bank or query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AuthErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing permission or unsupported license",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AuthErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Published source not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SIMULATION_BOOKMARKS_CHANGED; discard stale pagination token and refresh",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SIMULATION_DEPENDENCY_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected failure; do not treat as empty data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-dts-required-permissions": [
+          "simulations:read"
+        ]
+      }
+    },
+    "/simulations/bookmarks": {
+      "get": {
+        "operationId": "getSimulationBookmarks",
+        "summary": "BookmarkPage",
+        "parameters": [
+          {
+            "name": "licenseClass",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "bankVersion",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 96,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            }
+          },
+          {
+            "name": "chapterId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 6
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "SCENARIO_ASC"
+              ],
+              "default": "SCENARIO_ASC"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0,
+              "maximum": 10000,
+              "default": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 1,
+              "maximum": 12,
+              "default": 12
+            }
+          },
+          {
+            "name": "expectedDatasetVersion",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ApiResponse success, no-store. Global totals are independent of the chapter filter.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookmarkPageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid license, bank or query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AuthErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing permission or unsupported license",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AuthErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Published source not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "SIMULATION_BOOKMARKS_CHANGED; discard stale pagination token and refresh",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SIMULATION_DEPENDENCY_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected failure; do not treat as empty data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-dts-required-permissions": [
+          "simulations:read",
+          "media:read"
+        ]
+      }
+    },
+    "/simulations/bookmarks/{scenarioId}": {
+      "put": {
+        "operationId": "bookmarkSimulationScenario",
+        "summary": "Set the absolute bookmark state",
+        "tags": [
+          "Simulation learning"
+        ],
+        "description": "Idempotent absolute state; no eventId is required. This is not a global bookmark-list API.",
+        "parameters": [
+          {
+            "name": "scenarioId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "x-dts-required-permissions": [
+          "simulations:read",
+          "simulations:learn"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; unwrap data. All simulation successes are HTTP 200.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookmarkAckResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload, UUID, position, query or version format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid access JWT.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AuthErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing permission or unsupported license.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AuthErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown source/scenario, or attempt not owned by caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Lifecycle, playback, event idempotency or cursor conflict; inspect error.code.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency unavailable or learning disabled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error. Do not convert this into empty data or a successful learning result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookmarkRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "IdentityBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Existing Identity access JWT. Permissions are raw strings; PERM_ is a backend authority prefix, not a value to add to the token."
+      }
+    },
+    "schemas": {
+      "Scope": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "licenseClass": {
+            "type": "string"
+          },
+          "bankVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 96,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          }
+        },
+        "required": [
+          "userId",
+          "licenseClass",
+          "bankVersion"
+        ]
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "number",
+          "size",
+          "totalElements",
+          "totalPages"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "details",
+          "traceId",
+          "timestamp"
+        ]
+      },
+      "AuthErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data",
+          "timestamp"
+        ]
+      },
+      "BookmarkChapter": {
+        "type": "object",
+        "properties": {
+          "chapterId": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "chapterNumber": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "chapterName": {
+            "type": "string"
+          },
+          "bookmarkedCount": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "chapterId",
+          "chapterNumber",
+          "chapterName",
+          "bookmarkedCount"
+        ]
+      },
+      "BookmarkOverview": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "scoringVersion": {
+            "type": "string"
+          },
+          "totalBookmarked": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "maximum": 120
+          },
+          "chapters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookmarkChapter"
+            }
+          },
+          "datasetVersion": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "scope",
+          "scoringVersion",
+          "totalBookmarked",
+          "chapters",
+          "datasetVersion"
+        ]
+      },
+      "BookmarkItem": {
+        "type": "object",
+        "properties": {
+          "scenarioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scenarioNumber": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 120
+          },
+          "chapterId": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "chapterNumber": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "chapterName": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "thumbnailExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isPracticed": {
+            "type": "boolean"
+          },
+          "bestScore": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 5
+          },
+          "maxScore": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+              5
+            ]
+          },
+          "isBookmarked": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "completedAttemptCount": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "scenarioId",
+          "scenarioNumber",
+          "chapterId",
+          "chapterNumber",
+          "chapterName",
+          "title",
+          "durationMs",
+          "thumbnailUrl",
+          "thumbnailExpiresAt",
+          "isPracticed",
+          "bestScore",
+          "maxScore",
+          "isBookmarked",
+          "completedAttemptCount"
+        ]
+      },
+      "BookmarkPage": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          },
+          "scoringVersion": {
+            "type": "string"
+          },
+          "totalBookmarked": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0,
+            "maximum": 120
+          },
+          "chapters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookmarkChapter"
+            }
+          },
+          "chapterId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 6
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "SCENARIO_ASC"
+            ]
+          },
+          "filteredCount": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookmarkItem"
+            }
+          },
+          "page": {
+            "$ref": "#/components/schemas/Pagination"
+          },
+          "datasetVersion": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "scope",
+          "scoringVersion",
+          "totalBookmarked",
+          "chapters",
+          "chapterId",
+          "sort",
+          "filteredCount",
+          "items",
+          "page",
+          "datasetVersion"
+        ]
+      },
+      "BookmarkOverviewResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BookmarkOverview"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data",
+          "timestamp",
+          "traceId"
+        ]
+      },
+      "BookmarkPageResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BookmarkPage"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data",
+          "timestamp",
+          "traceId"
+        ]
+      },
+      "BookmarkRequest": {
+        "type": "object",
+        "properties": {
+          "licenseClass": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Use code from the existing license catalogue. Supported simulation codes: B,C1,C,D1,D2,D,BE,C1E,CE,D1E,D2E,DE. Missing/blank is 400 despite optional Java request binding."
+          },
+          "bankVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 96,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$",
+            "description": "Published bank version; reserved values current/source/imports/resolve-media are invalid as explicit versions."
+          },
+          "bookmarked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "licenseClass",
+          "bankVersion",
+          "bookmarked"
+        ]
+      },
+      "BookmarkAck": {
+        "type": "object",
+        "properties": {
+          "scenarioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bankVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 96,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$",
+            "description": "Published bank version; reserved values current/source/imports/resolve-media are invalid as explicit versions."
+          },
+          "bookmarked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "scenarioId",
+          "bankVersion",
+          "bookmarked"
+        ]
+      },
+      "BookmarkAckResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BookmarkAck"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "success",
+          "message",
+          "data",
+          "timestamp",
+          "traceId"
+        ]
+      }
+    }
+  }
+}

@@ -17,7 +17,7 @@ Gửi đáp án và cursor bằng sessionId chính chủ. API PUT progress giữ
 ### `POST /api/v1/questions/critical/answers`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<CriticalAnswerResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:learn`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/CriticalAnswerController.java`](../../src/main/java/com/dts/practice/controller/CriticalAnswerController.java), method `submitAnswer`.
 
 Answer a question in the current critical-question round
@@ -32,7 +32,7 @@ DTO: `CriticalAnswerResponse`, `SubmitCriticalAnswerRequest`.
 ### `PUT /api/v1/questions/critical/sessions/{sessionId}/cursor`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<CriticalSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:learn`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/CriticalCursorController.java`](../../src/main/java/com/dts/practice/controller/CriticalCursorController.java), method `saveCursor`.
 
 Save the current question in a critical-question round
@@ -48,7 +48,7 @@ DTO: `CriticalSessionResponse`, `UpdateCriticalCursorRequest`.
 ### `GET /api/v1/questions/critical/overview`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<CriticalProgressOverviewResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/CriticalQuestionProgressController.java`](../../src/main/java/com/dts/practice/controller/CriticalQuestionProgressController.java), method `getOverview`.
 
 Get critical question learning progress
@@ -63,7 +63,7 @@ DTO: `CriticalProgressOverviewResponse`.
 ### `PUT /api/v1/questions/critical/{questionId}/progress`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<CriticalProgressOverviewResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:learn`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/CriticalQuestionProgressController.java`](../../src/main/java/com/dts/practice/controller/CriticalQuestionProgressController.java), method `updateProgress`.
 
 Mark a critical question as learned or not learned
@@ -79,7 +79,7 @@ DTO: `CriticalProgressOverviewResponse`, `UpdateCriticalProgressRequest`.
 ### `POST /api/v1/questions/critical/sessions`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<CriticalSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:learn`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/CriticalSessionController.java`](../../src/main/java/com/dts/practice/controller/CriticalSessionController.java), method `start`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -92,7 +92,7 @@ DTO: `CriticalSessionResponse`, `StartCriticalSessionRequest`.
 ### `GET /api/v1/questions/critical/sessions/{sessionId}`
 
 - HTTP thành công: **200**; response Java: `ApiResponse<CriticalSessionResponse>`.
-- Quyền: Bearer token hợp lệ; dữ liệu cá nhân lấy từ principal của token.
+- Quyền: Bearer token hợp lệ và `practice:read`. Dữ liệu cá nhân lấy từ principal; giữ kiểm ownership tại service.
 - Controller: [`src/main/java/com/dts/practice/controller/CriticalSessionController.java`](../../src/main/java/com/dts/practice/controller/CriticalSessionController.java), method `get`.
 
 | Vị trí | Tên | Kiểu | Quy tắc |
@@ -109,3 +109,7 @@ DTO: `CriticalSessionResponse`.
 ## Part 4 — Lưu trữ và triển khai
 
 Các service và bảng liên quan được tổng hợp trong [danh mục chức năng](../PRACTICE_FEATURES.md) và [migration catalog](../db/MIGRATION_CATALOG.md). Chạy migration theo thứ tự version, giữ nguyên checksum. Xem [LOCAL_SETUP.md](../LOCAL_SETUP.md) để cấu hình DB/Kafka/Progress và nhập dữ liệu. Tài liệu này không tạo endpoint hay thay đổi runtime.
+
+## Authorization ngày 31 tháng 10 năm 2026
+
+Các endpoint trong tài liệu này áp dụng permission theo [ma trận Practice](authorization.md). GET nghiệp vụ dùng practice:read; thao tác học/ôn dùng practice:learn; thao tác trên phiên thi thử dùng practice:exam; import cần ROLE_ADMIN cùng practice:import. Giữ ownership và nghiệp vụ đã mô tả. Blueprint từng API theo Part 0–4 được liệt kê trong [mục lục](README.md).

@@ -1,5 +1,7 @@
 # Chạy DTS Practice trên máy mới
 
+Card 01 mô phỏng thêm V31 và API học độc lập. Với DB đã có đủ V1–V30/V27.1, thực hiện Check/Apply source rồi [DbCheck/DbMigrate V31](../tools/simulation-learning-migration/README.md) trước khi restart source mới. Không bật baseline/repair để bỏ qua lỗi checksum. API và vòng đời playback: [simulation_learning.md](api-blueprint/simulation_learning.md).
+
 ## 1. Phạm vi và điều kiện
 
 Repo `dts-practice` dùng Java21, Spring Boot3.3.2, Maven Wrapper/Maven3.9.9, PostgreSQL, Redis và Kafka. Port Practice local là8087; PostgreSQL container `dts-practice-postgres` publish5433 vào5432, database `dts_practice`. Python dùng cho công cụ nhập dữ liệu; không phải dependency của ứng dụng Java.

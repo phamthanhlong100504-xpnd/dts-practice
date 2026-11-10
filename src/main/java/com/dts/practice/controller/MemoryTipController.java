@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,6 +31,7 @@ public class MemoryTipController {
             summary = "List all published memory tips from the current shared bank",
             description = "Returns all published tips in stable sort order. The bank is shared across license classes."
     )
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ResponseEntity<ApiResponse<MemoryTipListResponse>> list() {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())

@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,6 +31,7 @@ public class PresetExamSetController {
     private final PresetExamSetService presetExamSetService;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('PERM_practice:read')")
     public ApiResponse<PresetExamSetListResponse> list(
             @AuthenticationPrincipal JwtUserDetails user,
             @RequestParam String licenseClass
@@ -43,6 +45,7 @@ public class PresetExamSetController {
     }
 
     @PostMapping("/{presetSetId}/sessions")
+    @PreAuthorize("hasAuthority('PERM_practice:exam')")
     public ApiResponse<ExamSessionResponse> startSession(
             @AuthenticationPrincipal JwtUserDetails user,
             @PathVariable UUID presetSetId,

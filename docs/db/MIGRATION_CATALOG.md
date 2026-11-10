@@ -1,6 +1,6 @@
 # Danh mục migration Practice
 
-31 file SQL tương ứng V1…V30 và V27.1. Các file hiện có được giữ nguyên byte; không tạo migration giả hoặc viết lại lịch sử để đóng gói Git. SHA256 dưới đây dùng so khớp file, không thay thế checksum Flyway.
+32 file SQL tương ứng V1…V31 và V27.1. V31 bổ sung dữ liệu mô phỏng độc lập; các migration trước giữ nguyên. SHA256 dưới đây dùng so khớp file, không thay thế checksum Flyway.
 
 | Version | File | Chức năng | SHA256 |
 | --- | --- | --- | --- |
@@ -35,6 +35,7 @@
 | 28 | [V28__practice_result_history_outbox.sql](../../src/main/resources/db/migration/V28__practice_result_history_outbox.sql) | practice result history outbox | `efbe7b5c234925a36dbb0e5711a90bda84868a832c35c6226fb1ddc9336a8ec3` |
 | 29 | [V29__restore_exam_audit_after_history_upgrade.sql](../../src/main/resources/db/migration/V29__restore_exam_audit_after_history_upgrade.sql) | restore exam audit after history upgrade | `479351f671a9a3454568b7be1ef20a676552156bbf005fc84555a41adfd1c0ed` |
 | 30 | [V30__question_exp_outbox.sql](../../src/main/resources/db/migration/V30__question_exp_outbox.sql) | question exp outbox | `59a37ad3d9faaf629ec43498c38edbbcfdaddc95f0d3ee93f4dd5f4872656ac2` |
+| 31 | [V31__add_simulation_learning.sql](../../src/main/resources/db/migration/V31__add_simulation_learning.sql) | Bảng lượt luyện, event dedup, bookmark/cursor và bảo vệ snapshot mô phỏng | `084fa63b7d67c144112449a876646ad2186c53625cb22e2f07e1cd73b72db7b0` |
 
 ## Trình tự và audit
 
@@ -44,4 +45,4 @@ V13/V27 tạo cấu trúc bộ đề và nội dung tham chiếu; import/seed d�
 
 Không sửa/xóa/chạy lại V1…V30 để sửa ba phiên TIMEOUT lịch sử có timestamp ngược đã được chấp nhận giữ nguyên. Không repair Flyway để che checksum sai. Đối với DB đã chạy, migration kế tiếp phải dùng version mới sau khi review/backup/clone proof.
 
-Gói chuẩn bị Git này không chạy migration, không tạo DB, không đổi dữ liệu nghiệp vụ. Cách chủ động chạy SQL bằng Flyway lúc triển khai có trong [LOCAL_SETUP.md](../LOCAL_SETUP.md).
+Apply source không chạy migration hoặc tạo DB. Với Card 01, dùng [runner V31](../../tools/simulation-learning-migration/README.md) để kiểm tra lịch sử và áp dụng V31 bằng native Flyway. Lịch sử local đã đối chiếu có đủ 31 SQL migration thành công đến V30, gồm V27.1; V31 không sửa bảng lý thuyết. Cách khởi động ứng dụng có trong [LOCAL_SETUP.md](../LOCAL_SETUP.md).
