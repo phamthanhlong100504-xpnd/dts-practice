@@ -38,6 +38,10 @@ server:
   port: ${SERVER_PORT:8087}
   shutdown: graceful
 
+simulation:
+  content-origin: ${SIMULATION_CONTENT_ORIGIN:http://content-builder:8082}
+  media-origin: ${SIMULATION_MEDIA_ORIGIN:http://dts-media:8080}
+
 eureka:
   client:
     service-url:

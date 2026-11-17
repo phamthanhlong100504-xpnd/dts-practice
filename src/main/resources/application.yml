@@ -98,6 +98,14 @@ exam:
     progress-url: ${PROGRESS_SERVICE_URL:http://localhost:8083}
     internal-key: ${EXAM_PROGRESS_INTERNAL_KEY:}
     poll-ms: 5000
+
+# ==================== Simulation Config ====================
+simulation:
+  content-origin: ${SIMULATION_CONTENT_ORIGIN:http://localhost:8082}
+  media-origin: ${SIMULATION_MEDIA_ORIGIN:http://localhost:8080}
+  learning-enabled: ${SIMULATION_LEARNING_ENABLED:true}
+  exams-enabled: ${SIMULATION_EXAMS_ENABLED:true}
+
 springdoc:
   api-docs:
     path: /api-docs
