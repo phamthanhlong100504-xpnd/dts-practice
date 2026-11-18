@@ -1,6 +1,8 @@
 package com.dts.practice.simulation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.net.*;
@@ -16,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 /** Bounded, non-redirecting HTTP calls only to configured service origins. */
 @Component
 public class SimulationHttp {
+    private static final Logger log=LoggerFactory.getLogger(SimulationHttp.class);
     private static final int LIMIT=2*1024*1024;
     private final ObjectMapper json;
     private final HttpClient client=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3))
@@ -48,11 +51,16 @@ public class SimulationHttp {
             try {response=pending.get(8,TimeUnit.SECONDS);}
             finally {if(!pending.isDone()) pending.cancel(true);}
             if(response.statusCode()==404 && missingIsNotFound) throw SimulationFailure.notFound();
-            if(response.statusCode()!=200 || !response.headers().firstValue("Content-Type").orElse("").startsWith("application/json")) throw SimulationFailure.unavailable();
+            if(response.statusCode()!=200 || !response.headers().firstValue("Content-Type").orElse("").startsWith("application/json")) {
+                log.error("Simulation HTTP error from {}: status={}, contentType={}, body={}",
+                        url, response.statusCode(), response.headers().firstValue("Content-Type").orElse("none"),
+                        new String(response.body(), java.nio.charset.StandardCharsets.UTF_8));
+                throw SimulationFailure.unavailable();
+            }
             return json.readValue(response.body(),type);
         } catch(com.dts.practice.exception.BusinessException e) {throw e;}
-        catch(InterruptedException e) {Thread.currentThread().interrupt();throw SimulationFailure.unavailable();}
-        catch(Exception e) {throw SimulationFailure.unavailable();}
+        catch(InterruptedException e) {Thread.currentThread().interrupt();log.error("Simulation HTTP interrupted for {}",url,e);throw SimulationFailure.unavailable();}
+        catch(Exception e) {log.error("Simulation HTTP call failed for {}",url,e);throw SimulationFailure.unavailable();}
     }
     private static final class LimitedBody implements HttpResponse.BodySubscriber<byte[]> {
         private final HttpResponse.BodySubscriber<byte[]> delegate=HttpResponse.BodySubscribers.ofByteArray();

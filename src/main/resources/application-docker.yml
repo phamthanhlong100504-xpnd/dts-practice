@@ -40,7 +40,7 @@ server:
 
 simulation:
   content-origin: ${SIMULATION_CONTENT_ORIGIN:http://content-builder:8082}
-  media-origin: ${SIMULATION_MEDIA_ORIGIN:http://103.20.96.85:8080}
+  media-origin: ${SIMULATION_MEDIA_ORIGIN:http://media-service:8080}
   performance:
     poll-ms: 500
 
