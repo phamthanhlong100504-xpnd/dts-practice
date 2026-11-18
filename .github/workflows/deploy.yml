@@ -82,7 +82,7 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
           EXAM_PROGRESS_INTERNAL_KEY: ${{ secrets.EXAM_PROGRESS_INTERNAL_KEY || 'dts-internal-secret-progress-2024' }}
         with:
           host: ${{ secrets.VPS_HOST }}
