@@ -33,9 +33,11 @@ services:
       - EUREKA_URI=${EUREKA_URI:-http://eureka-server:8761/eureka/}
       - EUREKA_ENABLED=${EUREKA_ENABLED:-true}
       - SIMULATION_CONTENT_ORIGIN=${SIMULATION_CONTENT_ORIGIN:-http://content-builder:8082}
-      - SIMULATION_MEDIA_ORIGIN=${SIMULATION_MEDIA_ORIGIN:-http://dts-media:8080}
+      - SIMULATION_MEDIA_ORIGIN=${SIMULATION_MEDIA_ORIGIN:-http://103.20.96.85:8080}
     extra_hosts:
       - "kafka:172.20.0.1"
+      - "103.20.96.85:host-gateway"
+      - "media-service:172.20.0.1"
     networks:
       - dts-network
 
