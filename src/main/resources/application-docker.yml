@@ -50,6 +50,10 @@ eureka:
   instance:
     prefer-ip-address: true
 
+exam:
+  progress-outbox:
+    progress-url: ${PROGRESS_SERVICE_URL:http://dts-progress:8083}
+
 logging:
   level:
     root: INFO

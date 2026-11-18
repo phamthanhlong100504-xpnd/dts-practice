@@ -34,6 +34,9 @@ services:
       - EUREKA_ENABLED=${EUREKA_ENABLED:-true}
       - SIMULATION_CONTENT_ORIGIN=${SIMULATION_CONTENT_ORIGIN:-http://content-builder:8082}
       - SIMULATION_MEDIA_ORIGIN=${SIMULATION_MEDIA_ORIGIN:-http://103.20.96.85:8080}
+      - EXAM_PROGRESS_OUTBOX_ENABLED=${EXAM_PROGRESS_OUTBOX_ENABLED:-true}
+      - PROGRESS_SERVICE_URL=${PROGRESS_SERVICE_URL:-http://dts-progress:8083}
+      - EXAM_PROGRESS_INTERNAL_KEY=${EXAM_PROGRESS_INTERNAL_KEY:-dts-internal-secret-progress-2024}
     extra_hosts:
       - "kafka:172.20.0.1"
       - "103.20.96.85:host-gateway"
