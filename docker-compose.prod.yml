@@ -28,7 +28,7 @@ services:
       - REDIS_HOST=${REDIS_HOST:-103.20.96.85}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-103.20.96.85:9092}
       - SPRING_KAFKA_LISTENER_AUTO_STARTUP=${SPRING_KAFKA_LISTENER_AUTO_STARTUP:-true}
       - EUREKA_URI=${EUREKA_URI:-http://eureka-server:8761/eureka/}
       - EUREKA_ENABLED=${EUREKA_ENABLED:-true}
@@ -38,7 +38,7 @@ services:
       - PROGRESS_SERVICE_URL=${PROGRESS_SERVICE_URL:-http://dts-progress:8083}
       - EXAM_PROGRESS_INTERNAL_KEY=${EXAM_PROGRESS_INTERNAL_KEY:-dts-internal-secret-progress-2024}
     extra_hosts:
-      - "kafka:172.20.0.1"
+      - "kafka:103.20.96.85"
       - "103.20.96.85:host-gateway"
       - "media-service:172.20.0.1"
     networks:
