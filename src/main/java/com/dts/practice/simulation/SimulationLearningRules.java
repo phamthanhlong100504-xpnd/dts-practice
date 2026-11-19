@@ -8,7 +8,7 @@ import java.util.List;
 import static com.dts.practice.simulation.SimulationLearningModel.*;
 
 final class SimulationLearningRules {
-    static final int GAP=12000,TOLERANCE=1500,RESPONSE_LAG=3000,END_TOLERANCE=250;
+    static final int GAP=12000,TOLERANCE=1500,RESPONSE_LAG=3000,END_TOLERANCE=1000;
     static final Policy POLICY=new Policy(false,false,true,false,3000,GAP);
     private SimulationLearningRules() {}
     static BusinessException conflict(String code,String message) {return BusinessException.of(code,message,HttpStatus.CONFLICT);}

@@ -59,26 +59,15 @@ jobs:
           docker push $IMAGE:latest
           docker push $IMAGE:${{ github.sha }}
 
-      - name: Create deploy directory on VPS
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          script: mkdir -p ${{ env.DEPLOY_DIR }}
-
-      - name: Copy docker-compose to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          source: "docker-compose.prod.yml"
-          target: ${{ env.DEPLOY_DIR }}
+      - name: Prepare docker-compose payload
+        id: compose
+        run: |
+          echo "B64=$(base64 -w 0 docker-compose.prod.yml)" >> $GITHUB_OUTPUT
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.2.2
         env:
+          COMPOSE_B64: ${{ steps.compose.outputs.B64 }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
@@ -88,11 +77,12 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
-          envs: DB_PASSWORD,JWT_ACCESS_SECRET,REDIS_PASSWORD,GITHUB_TOKEN,EXAM_PROGRESS_INTERNAL_KEY
+          envs: COMPOSE_B64,DB_PASSWORD,JWT_ACCESS_SECRET,REDIS_PASSWORD,GITHUB_TOKEN,EXAM_PROGRESS_INTERNAL_KEY
           script: |
+            mkdir -p ${{ env.DEPLOY_DIR }}
             docker network create dts-network || true
             cd ${{ env.DEPLOY_DIR }}
-            mv -f docker-compose.prod.yml docker-compose.yml
+            echo "$COMPOSE_B64" | base64 -d > docker-compose.yml
             export GITHUB_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
             sed -i "s/${GITHUB_OWNER}/$GITHUB_OWNER/g" docker-compose.yml
             echo "GITHUB_REPOSITORY_OWNER=$GITHUB_OWNER" > .env

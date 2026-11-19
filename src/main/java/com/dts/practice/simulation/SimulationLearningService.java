@@ -127,10 +127,15 @@ public class SimulationLearningService {
     private Attempt event(UUID attempt,Event request,String kind,java.util.function.Consumer<Row> action) {
         var actor=learn();id(attempt);id(request.eventId());id(request.playbackEventId());
         if(request.mediaTimeMs()==null || request.mediaTimeMs()<0)throw SimulationFailure.invalid("mediaTimeMs is required and nonnegative");
+        var row=repo.get(actor.userId(),attempt,true);nonce(row,request.playbackEventId());
+        int safeMediaTimeMs=request.mediaTimeMs();
+        if(safeMediaTimeMs>row.duration && safeMediaTimeMs<=row.duration+3000) {
+            safeMediaTimeMs=row.duration;
+            request=new Event(request.eventId(),request.playbackEventId(),safeMediaTimeMs);
+        }
+        if(request.mediaTimeMs()>row.duration)throw SimulationFailure.invalid("mediaTimeMs outside the video");
         String hash=digest(kind,attempt,request.playbackEventId(),request.mediaTimeMs());
         if(replay(actor.userId(),request.eventId(),attempt,kind,hash))return view(repo.get(actor.userId(),attempt,false),clock.now());
-        var row=repo.get(actor.userId(),attempt,true);nonce(row,request.playbackEventId());
-        if(request.mediaTimeMs()>row.duration)throw SimulationFailure.invalid("mediaTimeMs outside the video");
         boolean terminal="COMPLETED".equals(row.status);Integer oldResponse=row.responseMs;
         action.accept(row);
         // New repeats of complete/Space acknowledge the existing terminal result without rewriting it.
