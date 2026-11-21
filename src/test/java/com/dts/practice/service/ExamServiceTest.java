@@ -71,6 +71,9 @@ class ExamServiceTest {
     @Mock
     private WrongQuestionProgressService wrongQuestionProgressService;
 
+    @Mock
+    private PracticeResultEventPublisher practiceResultEventPublisher;
+
     @InjectMocks
     private ExamService examService;
 

@@ -57,6 +57,7 @@ public class ExamService {
     private final ObjectMapper objectMapper;
     private final WrongQuestionProgressService wrongQuestionProgressService;
     private final ExamProgressReceiptService examProgressReceiptService;
+    private final PracticeResultEventPublisher practiceResultEventPublisher;
     // ==================== START EXAM ====================
 
     public ExamSessionResponse startExam(
@@ -572,6 +573,10 @@ public class ExamService {
                         previous,
                         result.passed()
                 );
+                practiceResultEventPublisher.publishExamResult(
+                        exam,
+                        result.passed()
+                );
                 return result;
         }
 
@@ -624,6 +629,11 @@ public class ExamService {
         examProgressReceiptService.record(
                 exam,
                 answers,
+                result.passed()
+        );
+
+        practiceResultEventPublisher.publishExamResult(
+                exam,
                 result.passed()
         );
 
@@ -934,10 +944,15 @@ public class ExamService {
 
         examRepository.save(exam);
         syncWrongQuestionProgress(exam, answers);
+        boolean passed = passedForProgress(exam, answers);
         examProgressReceiptService.record(
                 exam,
                 answers,
-                passedForProgress(exam, answers)
+                passed
+        );
+        practiceResultEventPublisher.publishExamResult(
+                exam,
+                passed
         );
     }
 

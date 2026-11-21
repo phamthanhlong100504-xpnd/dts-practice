@@ -75,6 +75,16 @@ public interface ExamRepository extends JpaRepository<Exam, UUID> {
 
     long countByUserId(UUID userId);
 
+    int countByUserIdAndHistoryTargetIdAndCompletedAtIsNotNull(
+            UUID userId,
+            UUID historyTargetId
+    );
+
+    List<Exam> findByStatusInAndCompletedAtAfterOrderByCompletedAtAsc(
+            Collection<ExamStatus> statuses,
+            Instant completedAfter
+    );
+
     long countByUserIdAndStatus(
             UUID userId,
             ExamStatus status

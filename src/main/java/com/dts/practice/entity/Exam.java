@@ -89,6 +89,12 @@ public class Exam {
     @Column(name = "mode", length = 10)
     private String mode;
 
+    @Column(name = "history_target_id")
+    private UUID historyTargetId;
+
+    @Column(name = "history_attempt_no")
+    private Integer historyAttemptNo;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
