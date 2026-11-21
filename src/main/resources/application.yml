@@ -21,7 +21,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:
@@ -94,10 +94,13 @@ management:
 exam:
   auto-finish-interval-ms: 30000  # Check expired exams every 30s
   progress-outbox:
-    enabled: ${EXAM_PROGRESS_OUTBOX_ENABLED:false}
-    progress-url: ${PROGRESS_SERVICE_URL:http://localhost:8083}
-    internal-key: ${EXAM_PROGRESS_INTERNAL_KEY:}
-    poll-ms: 5000
+    enabled: false
+  exp-outbox:
+    enabled: false
+  result-backfill:
+    enabled: false
+  result-outbox:
+    enabled: false
 
 # ==================== Simulation Config ====================
 simulation:
@@ -105,6 +108,8 @@ simulation:
   media-origin: ${SIMULATION_MEDIA_ORIGIN:http://localhost:8080}
   learning-enabled: ${SIMULATION_LEARNING_ENABLED:true}
   exams-enabled: ${SIMULATION_EXAMS_ENABLED:true}
+  performance:
+    enabled: false
 
 springdoc:
   api-docs:
