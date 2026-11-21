@@ -849,29 +849,7 @@ public class ExamService {
             Exam exam,
             List<ExamAnswer> answers
     ) {
-        if (!TheoryBankScoringPolicy.usesModernExamMatrix(exam.getBankVersion())) {
-            return;
-        }
-
-        for (ExamAnswer answer : answers) {
-            if (answer.getSelectedAnswer() == null
-                    || answer.getSelectedAnswer().isBlank()) {
-                continue;
-            }
-
-            Instant answeredAt = answer.getAnsweredAt() != null
-                    ? answer.getAnsweredAt()
-                    : exam.getCompletedAt();
-
-            wrongQuestionProgressService.recordAnswer(
-                    exam.getUserId(),
-                    exam.getExamType(),
-                    exam.getBankVersion(),
-                    answer.getQuestionId(),
-                    answer.getSelectedAnswer(),
-                    answeredAt
-            );
-        }
+        // No-op: wrong question progress tracking is consolidated into DTS_PROGRESS service
     }
 
     private void validateAnswerOption(

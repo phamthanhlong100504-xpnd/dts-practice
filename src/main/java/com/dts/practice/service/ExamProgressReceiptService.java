@@ -7,24 +7,53 @@ import com.dts.practice.enums.ExamStatus;
 import com.dts.practice.exception.BusinessException;
 import com.dts.practice.repository.ExamAnswerRepository;
 import com.dts.practice.repository.ExamRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
 
-import java.sql.Timestamp;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
+@Slf4j
 public class ExamProgressReceiptService {
 
-    private final JdbcTemplate jdbcTemplate;
     private final ExamRepository examRepository;
     private final ExamAnswerRepository examAnswerRepository;
+    private final RestClient progressClient;
+    private final String internalKey;
+
+    public ExamProgressReceiptService(
+            ExamRepository examRepository,
+            ExamAnswerRepository examAnswerRepository,
+            RestClient.Builder builder,
+            @Value("${exam.progress-outbox.progress-url:${PROGRESS_SERVICE_URL:http://dts-progress:8083}}")
+            String progressUrl,
+            @Value("${exam.progress-outbox.internal-key:${EXAM_PROGRESS_INTERNAL_KEY:dts-internal-secret-progress-2024}}")
+            String internalKey
+    ) {
+        this.examRepository = examRepository;
+        this.examAnswerRepository = examAnswerRepository;
+        this.internalKey = internalKey;
+
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(2000);
+        factory.setReadTimeout(5000);
+
+        this.progressClient = builder != null
+                ? builder.baseUrl(progressUrl != null ? progressUrl : "http://dts-progress:8083")
+                         .requestFactory(factory)
+                         .build()
+                : null;
+    }
 
     // Gọi trong cùng transaction kết thúc bài thi.
     @Transactional(propagation = Propagation.MANDATORY)
@@ -69,96 +98,57 @@ public class ExamProgressReceiptService {
             );
         }
 
-        jdbcTemplate.update("""
-                INSERT INTO exam_progress_receipts (
-                    user_id,
-                    exam_id,
-                    exam_type,
-                    bank_version,
-                    mode,
-                    status,
-                    total_questions,
-                    correct_count,
-                    wrong_count,
-                    answered_wrong_count,
-                    unanswered_count,
-                    score,
-                    passed,
-                    duration_seconds,
-                    started_at,
-                    completed_at
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT (user_id, exam_id) DO NOTHING
-                """,
-                exam.getUserId(),
-                exam.getId(),
-                exam.getExamType(),
-                exam.getBankVersion(),
-                exam.getMode(),
-                exam.getStatus().name(),
-                exam.getTotalQuestions(),
-                exam.getCorrectCount(),
-                exam.getWrongCount(),
-                answeredWrong,
-                unanswered,
-                score(exam),
-                passed,
-                durationSeconds(exam),
-                Timestamp.from(exam.getStartedAt()),
-                Timestamp.from(exam.getCompletedAt())
-        );
-
-        // Một examId chỉ tạo một logical EXAM_FINISHED event.
-        // Receipt và outbox cùng commit với trạng thái kết thúc bài.
-        jdbcTemplate.update("""
-                INSERT INTO exam_progress_outbox (
-                    event_id,
-                    user_id,
-                    exam_id,
-                    event_type,
-                    schema_version,
-                    payload
-                )
-                SELECT
-                    r.exam_id,
-                    r.user_id,
-                    r.exam_id,
-                    'EXAM_FINISHED',
-                    1,
-                    jsonb_build_object(
-                        'eventId', r.exam_id,
-                        'eventType', 'EXAM_FINISHED',
-                        'schemaVersion', 1,
-                        'source', 'dts-practice',
-                        'userId', r.user_id,
-                        'examId', r.exam_id,
-                        'licenseClass', r.exam_type,
-                        'bankVersion', r.bank_version,
-                        'mode', r.mode,
-                        'status', r.status,
-                        'totalQuestions', r.total_questions,
-                        'correctCount', r.correct_count,
-                        'wrongCountLegacy', r.wrong_count,
-                        'answeredWrongCount', r.answered_wrong_count,
-                        'unansweredCount', r.unanswered_count,
-                        'score', r.score,
-                        'passed', r.passed,
-                        'durationSeconds', r.duration_seconds,
-                        'startedAt', r.started_at,
-                        'completedAt', r.completed_at
-                    )
-                FROM exam_progress_receipts r
-                WHERE r.user_id = ?
-                  AND r.exam_id = ?
-                ON CONFLICT (event_id) DO NOTHING
-                """,
-                exam.getUserId(),
-                exam.getId()
-        );
+        syncToProgressService(exam, answeredWrong, unanswered, passed);
     }
 
-    // Cho phép lấy receipt của bài đã hoàn thành trước migration.
+    private void syncToProgressService(
+            Exam exam,
+            int answeredWrong,
+            int unanswered,
+            Boolean passed
+    ) {
+        if (progressClient == null || internalKey == null || internalKey.isBlank()) {
+            return;
+        }
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("eventId", exam.getId());
+        payload.put("eventType", "EXAM_FINISHED");
+        payload.put("schemaVersion", 1);
+        payload.put("source", "dts-practice");
+        payload.put("userId", exam.getUserId());
+        payload.put("examId", exam.getId());
+        payload.put("licenseClass", exam.getExamType());
+        payload.put("bankVersion", exam.getBankVersion());
+        payload.put("mode", exam.getMode());
+        payload.put("status", exam.getStatus().name());
+        payload.put("totalQuestions", exam.getTotalQuestions());
+        payload.put("correctCount", exam.getCorrectCount());
+        payload.put("wrongCountLegacy", exam.getWrongCount());
+        payload.put("answeredWrongCount", answeredWrong);
+        payload.put("unansweredCount", unanswered);
+        payload.put("score", score(exam));
+        payload.put("passed", passed);
+        payload.put("durationSeconds", durationSeconds(exam));
+        payload.put("startedAt", exam.getStartedAt());
+        payload.put("completedAt", exam.getCompletedAt());
+
+        try {
+            progressClient.post()
+                    .uri("/internal/v1/practice/exam-results")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("X-DTS-Internal-Key", internalKey)
+                    .body(payload)
+                    .retrieve()
+                    .toBodilessEntity();
+            log.info("Successfully synced exam progress to dts-progress for exam {}", exam.getId());
+        } catch (Exception ex) {
+            log.warn("Non-fatal: could not sync exam progress to dts-progress for exam {}: {}",
+                    exam.getId(), ex.getMessage());
+        }
+    }
+
+    // Cho phép lấy receipt của bài đã hoàn thành.
     @Transactional
     public ExamProgressReceiptResponse getReceipt(
             UUID examId,
@@ -180,53 +170,35 @@ public class ExamProgressReceiptService {
             );
         }
 
-        record(
-                exam,
-                examAnswerRepository
-                        .findByExamIdOrderByQuestionId(examId),
-                passed
-        );
+        List<ExamAnswer> answers = examAnswerRepository
+                .findByExamIdOrderByQuestionId(examId);
 
-        return jdbcTemplate.queryForObject("""
-                SELECT
-                    exam_id,
-                    exam_type,
-                    bank_version,
-                    mode,
-                    status,
-                    total_questions,
-                    correct_count,
-                    wrong_count,
-                    answered_wrong_count,
-                    unanswered_count,
-                    score,
-                    passed,
-                    duration_seconds,
-                    started_at,
-                    completed_at
-                FROM exam_progress_receipts
-                WHERE user_id = ?
-                  AND exam_id = ?
-                """,
-                (rs, row) -> new ExamProgressReceiptResponse(
-                        rs.getObject("exam_id", UUID.class),
-                        rs.getString("exam_type"),
-                        rs.getString("bank_version"),
-                        rs.getString("mode"),
-                        rs.getString("status"),
-                        rs.getInt("total_questions"),
-                        rs.getInt("correct_count"),
-                        rs.getInt("wrong_count"),
-                        rs.getInt("answered_wrong_count"),
-                        rs.getInt("unanswered_count"),
-                        rs.getInt("score"),
-                        rs.getObject("passed", Boolean.class),
-                        rs.getInt("duration_seconds"),
-                        rs.getTimestamp("started_at").toInstant(),
-                        rs.getTimestamp("completed_at").toInstant()
-                ),
-                userId,
-                examId
+        int answeredWrong = (int) answers.stream()
+                .filter(answer ->
+                        answer.getSelectedAnswer() != null
+                                && !answer.getSelectedAnswer().isBlank()
+                                && !Boolean.TRUE.equals(answer.getIsCorrect())
+                )
+                .count();
+
+        int unanswered = Math.max(0, exam.getTotalQuestions() - exam.getCorrectCount() - answeredWrong);
+
+        return new ExamProgressReceiptResponse(
+                exam.getId(),
+                exam.getExamType(),
+                exam.getBankVersion(),
+                exam.getMode(),
+                exam.getStatus().name(),
+                exam.getTotalQuestions(),
+                exam.getCorrectCount(),
+                exam.getWrongCount(),
+                answeredWrong,
+                unanswered,
+                score(exam),
+                passed,
+                durationSeconds(exam),
+                exam.getStartedAt(),
+                exam.getCompletedAt()
         );
     }
 
