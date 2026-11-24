@@ -3,10 +3,12 @@ package com.dts.practice.service;
 import com.dts.practice.dto.response.ExamProgressReceiptResponse;
 import com.dts.practice.entity.Exam;
 import com.dts.practice.entity.ExamAnswer;
+import com.dts.practice.entity.Question;
 import com.dts.practice.enums.ExamStatus;
 import com.dts.practice.exception.BusinessException;
 import com.dts.practice.repository.ExamAnswerRepository;
 import com.dts.practice.repository.ExamRepository;
+import com.dts.practice.repository.QuestionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -17,10 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -28,12 +32,14 @@ public class ExamProgressReceiptService {
 
     private final ExamRepository examRepository;
     private final ExamAnswerRepository examAnswerRepository;
+    private final QuestionRepository questionRepository;
     private final RestClient progressClient;
     private final String internalKey;
 
     public ExamProgressReceiptService(
             ExamRepository examRepository,
             ExamAnswerRepository examAnswerRepository,
+            QuestionRepository questionRepository,
             RestClient.Builder builder,
             @Value("${exam.progress-outbox.progress-url:${PROGRESS_SERVICE_URL:http://dts-progress:8083}}")
             String progressUrl,
@@ -42,6 +48,7 @@ public class ExamProgressReceiptService {
     ) {
         this.examRepository = examRepository;
         this.examAnswerRepository = examAnswerRepository;
+        this.questionRepository = questionRepository;
         this.internalKey = internalKey;
 
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -98,11 +105,12 @@ public class ExamProgressReceiptService {
             );
         }
 
-        syncToProgressService(exam, answeredWrong, unanswered, passed);
+        syncToProgressService(exam, answers, answeredWrong, unanswered, passed);
     }
 
     private void syncToProgressService(
             Exam exam,
+            List<ExamAnswer> answers,
             int answeredWrong,
             int unanswered,
             Boolean passed
@@ -145,6 +153,57 @@ public class ExamProgressReceiptService {
         } catch (Exception ex) {
             log.warn("Non-fatal: could not sync exam progress to dts-progress for exam {}: {}",
                     exam.getId(), ex.getMessage());
+        }
+
+        // Sync individual wrong questions into user_question_progress with needs_review = true
+        if (answers != null && !answers.isEmpty()) {
+            List<Integer> wrongQuestionIds = answers.stream()
+                    .filter(a -> a.getSelectedAnswer() != null && !a.getSelectedAnswer().isBlank() && !Boolean.TRUE.equals(a.getIsCorrect()))
+                    .map(ExamAnswer::getQuestionId)
+                    .toList();
+
+            if (!wrongQuestionIds.isEmpty()) {
+                try {
+                    Map<Integer, Question> questionMap = questionRepository.findAllById(wrongQuestionIds).stream()
+                            .collect(Collectors.toMap(Question::getId, q -> q));
+
+                    for (ExamAnswer wrongAns : answers) {
+                        if (wrongAns.getSelectedAnswer() == null || wrongAns.getSelectedAnswer().isBlank() || Boolean.TRUE.equals(wrongAns.getIsCorrect())) {
+                            continue;
+                        }
+                        Question q = questionMap.get(wrongAns.getQuestionId());
+                        int chapterId = (q != null && q.getChapter() != null) ? q.getChapter() : 1;
+                        boolean isCritical = q != null && Boolean.TRUE.equals(q.getIsCritical());
+
+                        Map<String, Object> qPayload = new HashMap<>();
+                        qPayload.put("eventId", UUID.randomUUID());
+                        qPayload.put("eventType", "QUESTION_PROGRESS_CHANGED");
+                        qPayload.put("schemaVersion", 1);
+                        qPayload.put("source", "dts-practice");
+                        qPayload.put("eventSequence", System.currentTimeMillis());
+                        qPayload.put("userId", exam.getUserId());
+                        qPayload.put("licenseClass", exam.getExamType());
+                        qPayload.put("bankVersion", exam.getBankVersion() != null ? exam.getBankVersion() : "dts-2026-600-v1");
+                        qPayload.put("questionId", wrongAns.getQuestionId());
+                        qPayload.put("chapterId", chapterId);
+                        qPayload.put("critical", isCritical);
+                        qPayload.put("dimension", "REVIEW");
+                        qPayload.put("needsReview", true);
+                        qPayload.put("studiedAt", exam.getCompletedAt() != null ? exam.getCompletedAt() : Instant.now());
+
+                        progressClient.post()
+                                .uri("/internal/v1/practice/question-progress")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .header("X-DTS-Internal-Key", internalKey)
+                                .body(qPayload)
+                                .retrieve()
+                                .toBodilessEntity();
+                    }
+                    log.info("Successfully synced {} wrong questions to dts-progress for exam {}", wrongQuestionIds.size(), exam.getId());
+                } catch (Exception ex) {
+                    log.warn("Non-fatal: could not sync wrong questions to dts-progress: {}", ex.getMessage());
+                }
+            }
         }
     }
 
