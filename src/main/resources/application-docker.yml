@@ -50,8 +50,8 @@ simulation:
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_URI:http://eureka-server:8761/eureka/}
-    enabled: ${EUREKA_ENABLED:true}
+      defaultZone: ${EUREKA_URI:http://103.20.96.85:8761/eureka/}
+    enabled: ${EUREKA_ENABLED:false}
   instance:
     prefer-ip-address: true
 

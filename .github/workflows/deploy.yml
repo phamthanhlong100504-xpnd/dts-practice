@@ -92,6 +92,7 @@ jobs:
             echo "REDIS_PASSWORD=$REDIS_PASSWORD" >> .env
             echo "EXAM_PROGRESS_INTERNAL_KEY=$EXAM_PROGRESS_INTERNAL_KEY" >> .env
             echo "EXAM_PROGRESS_OUTBOX_ENABLED=false" >> .env
+            echo "EUREKA_ENABLED=false" >> .env
             echo "PROGRESS_SERVICE_URL=http://dts-progress:8083" >> .env
             echo "$GITHUB_TOKEN" | docker login ghcr.io -u $GITHUB_OWNER --password-stdin
             docker compose pull
