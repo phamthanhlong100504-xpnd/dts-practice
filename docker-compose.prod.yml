@@ -10,7 +10,7 @@ services:
       retries: 3
       start_period: 40s
     ports:
-      - "${SERVER_PORT:-8083}:8087"
+      - "${SERVER_PORT:-8087}:8087"
     mem_limit: 350m
     environment:
       - JAVA_TOOL_OPTIONS=-Xms64m -Xmx128m -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m -Xss512k

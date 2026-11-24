@@ -86,6 +86,7 @@ jobs:
             export GITHUB_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
             sed -i "s/${GITHUB_OWNER}/$GITHUB_OWNER/g" docker-compose.yml
             echo "GITHUB_REPOSITORY_OWNER=$GITHUB_OWNER" > .env
+            echo "SERVER_PORT=8087" >> .env
             echo "DB_PASSWORD=$DB_PASSWORD" >> .env
             echo "JWT_ACCESS_SECRET=$JWT_ACCESS_SECRET" >> .env
             echo "REDIS_PASSWORD=$REDIS_PASSWORD" >> .env
@@ -95,4 +96,6 @@ jobs:
             echo "$GITHUB_TOKEN" | docker login ghcr.io -u $GITHUB_OWNER --password-stdin
             docker compose pull
             docker compose up -d
+            docker compose ps -a
+            docker logs dts-practice-service --tail 50 || true
             docker image prune -a -f
