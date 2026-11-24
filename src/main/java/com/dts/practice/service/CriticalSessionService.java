@@ -13,10 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -27,6 +29,7 @@ public class CriticalSessionService {
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final com.dts.practice.client.ProgressSyncClient progressSyncClient;
 
     @Transactional
     public CriticalSessionResponse start(
@@ -90,37 +93,44 @@ public class CriticalSessionService {
             }
         }
 
+        com.dts.practice.client.CriticalOverviewSyncDto overview =
+                progressSyncClient.getCriticalOverview(userId, license);
+        Map<Integer, com.dts.practice.client.CriticalOverviewSyncDto.CriticalItemSyncDto> progressMap = new HashMap<>();
+        if (overview != null && overview.questions() != null) {
+            for (com.dts.practice.client.CriticalOverviewSyncDto.CriticalItemSyncDto item : overview.questions()) {
+                progressMap.put(item.questionId(), item);
+            }
+        }
+
         List<SnapshotQuestion> snapshot = jdbcTemplate.query("""
-                SELECT q.id,
-                       COALESCE(p.learned, FALSE) AS learned,
-                       p.selected_answer,
-                       p.is_correct,
-                       p.last_answered_at
+                SELECT q.id
                 FROM questions q
-                LEFT JOIN critical_question_progress p
-                  ON p.user_id = ?
-                 AND p.license_class = ?
-                 AND p.bank_version = ?
-                 AND p.question_id = q.id
                 WHERE q.bank_version = ?
                   AND q.is_critical = TRUE
                   AND jsonb_exists(q.critical_licenses, ?)
                 ORDER BY q.source_question_id, q.id
                 """,
-                (rs, rowNum) -> new SnapshotQuestion(
-                        rs.getInt("id"),
-                        rowNum + 1,
-                        rs.getBoolean("learned"),
-                        "CONTINUE".equals(mode)
-                                && rs.getBoolean("learned"),
-                        rs.getString("selected_answer"),
-                        rs.getObject("is_correct", Boolean.class),
-                        rs.getTimestamp("last_answered_at") == null
-                                ? null
-                                : rs.getTimestamp("last_answered_at")
-                                        .toInstant()
-                ),
-                userId, license, CURRENT_BANK, CURRENT_BANK, license
+                (rs, rowNum) -> {
+                    int qId = rs.getInt("id");
+                    com.dts.practice.client.CriticalOverviewSyncDto.CriticalItemSyncDto item = progressMap.get(qId);
+                    boolean learned = item != null && Boolean.TRUE.equals(item.learned());
+                    Instant answeredAt = null;
+                    if (item != null && item.lastStudiedAt() != null) {
+                        try {
+                            answeredAt = Instant.parse(item.lastStudiedAt());
+                        } catch (Exception ignored) {}
+                    }
+                    return new SnapshotQuestion(
+                            qId,
+                            rowNum + 1,
+                            learned,
+                            "CONTINUE".equals(mode) && learned,
+                            item != null ? item.selectedAnswer() : null,
+                            item != null ? item.isCorrect() : null,
+                            answeredAt
+                    );
+                },
+                CURRENT_BANK, license
         );
 
         if (snapshot.isEmpty()) {
@@ -285,6 +295,8 @@ public class CriticalSessionService {
 
         SessionRow session = sessions.get(0);
 
+        Set<Integer> bookmarkedIds = progressSyncClient.getBookmarks(userId, session.licenseClass());
+
         List<CriticalSessionResponse.Question> questions =
                 jdbcTemplate.query("""
                         SELECT sq.question_id,
@@ -294,15 +306,7 @@ public class CriticalSessionService {
                                q.question_text,
                                q.options::text AS options,
                                q.image_url,
-                               q.media_file_id,
-                               EXISTS (
-                                   SELECT 1
-                                   FROM chapter_question_bookmarks b
-                                   WHERE b.user_id = ?
-                                     AND b.license_class = ?
-                                     AND b.bank_version = ?
-                                     AND b.question_id = sq.question_id
-                               ) AS bookmarked
+                               q.media_file_id
                         FROM critical_question_session_questions sq
                         JOIN questions q ON q.id = sq.question_id
                         WHERE sq.session_id = ?
@@ -323,12 +327,9 @@ public class CriticalSessionService {
                                                 "media_file_id",
                                                 UUID.class
                                         ),
-                                        rs.getBoolean("bookmarked"),
+                                        bookmarkedIds.contains(rs.getInt("question_id")),
                                         rs.getBoolean("initial_learned")
                                 ),
-                        userId,
-                        session.licenseClass(),
-                        session.bankVersion(),
                         sessionId
                 );
 

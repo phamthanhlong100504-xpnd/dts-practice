@@ -30,6 +30,7 @@ public class WrongReviewSessionService {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final WrongQuestionProgressService wrongQuestionProgressService;
+    private final com.dts.practice.client.ProgressSyncClient progressSyncClient;
 
     @Transactional
     public WrongReviewSessionResponse start(
@@ -186,6 +187,8 @@ public class WrongReviewSessionService {
             );
         }
 
+        java.util.Set<Integer> bookmarkedIds = progressSyncClient.getBookmarks(userId, session.licenseClass());
+
         List<WrongReviewSessionResponse.Question> questions =
                 jdbcTemplate.query("""
                         SELECT sq.question_id,
@@ -208,15 +211,7 @@ public class WrongReviewSessionService {
                                        ),
                                        ?
                                    )
-                               ) AS critical_for_license,
-                               EXISTS (
-                                   SELECT 1
-                                   FROM chapter_question_bookmarks b
-                                   WHERE b.user_id = ?
-                                     AND b.license_class = ?
-                                     AND b.bank_version = ?
-                                     AND b.question_id = q.id
-                               ) AS bookmarked
+                               ) AS critical_for_license
                         FROM wrong_question_review_session_questions sq
                         JOIN questions q
                           ON q.id = sq.question_id
@@ -260,12 +255,9 @@ public class WrongReviewSessionService {
                                                 : rs.getTimestamp(
                                                         "last_wrong_at"
                                                 ).toInstant(),
-                                        rs.getBoolean("bookmarked")
+                                        bookmarkedIds.contains(rs.getInt("question_id"))
                                 ),
                         session.licenseClass(),
-                        userId,
-                        session.licenseClass(),
-                        session.bankVersion(),
                         sessionId,
                         session.bankVersion(),
                         session.licenseClass()

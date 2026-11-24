@@ -23,6 +23,7 @@ public class CriticalAnswerService {
             CurrentQuestionBank.currentVersion();
 
     private final JdbcTemplate jdbcTemplate;
+    private final com.dts.practice.client.ProgressSyncClient progressSyncClient;
 
     @Transactional
     public CriticalAnswerResponse submitAnswer(
@@ -189,39 +190,18 @@ public class CriticalAnswerService {
                 request.questionId()
         );
 
-        // Đáp án vòng ôn và tiến độ lâu dài cùng commit một transaction.
-        jdbcTemplate.update("""
-                INSERT INTO critical_question_progress
-                    (id, user_id, license_class, bank_version,
-                     question_id, learned, selected_answer, is_correct,
-                     learned_at, last_answered_at, last_studied_at,
-                     created_at, updated_at)
-                VALUES (
-                    gen_random_uuid(), ?, ?, ?, ?, TRUE, ?, ?, ?, ?, ?,
-                    NOW(), NOW()
-                )
-                ON CONFLICT ON CONSTRAINT uq_critical_question_progress_scope
-                DO UPDATE
-                SET learned = TRUE,
-                    selected_answer = EXCLUDED.selected_answer,
-                    is_correct = EXCLUDED.is_correct,
-                    learned_at = COALESCE(
-                        critical_question_progress.learned_at,
-                        EXCLUDED.learned_at
-                    ),
-                    last_answered_at = EXCLUDED.last_answered_at,
-                    last_studied_at = EXCLUDED.last_studied_at,
-                    updated_at = NOW()
-                """,
+        // Sync critical question progress to dts-progress
+        progressSyncClient.syncQuestionProgress(
                 userId,
                 license,
                 CURRENT_BANK,
                 request.questionId(),
-                answer,
+                1,
+                true,
+                "CRITICAL",
                 correct,
-                savedAt,
-                savedAt,
-                savedAt
+                null,
+                savedAt != null ? savedAt.toInstant() : Instant.now()
         );
 
         Long unanswered = jdbcTemplate.queryForObject("""
