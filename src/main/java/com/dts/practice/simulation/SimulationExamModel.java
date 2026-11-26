@@ -50,12 +50,12 @@ public final class SimulationExamModel {
     public record Event(UUID eventId,int position,UUID playbackEventId,Integer mediaTimeMs) {}
     public record Restart(UUID eventId,int position,UUID playbackEventId) {}
     public record Command(UUID eventId) {}
-    static final class Row {
+    public static final class Row {
         UUID id,user,createKey;String createHash,license,bank,scoring,manifest,policyVersion,status;
         String mode="RANDOM";SimulationPresets.Ref preset;
         int passingScore,completedCount,currentPosition;Instant created,started,updated,completed,cancelled;
     }
-    static final class Frame {
+    public static final class Frame {
         UUID session,scenarioId,playbackId,responseEvent;int position,duration,lastMs,segmentStart;boolean checkpointColumn;Integer responseMs,score;
         String chapterName,etag,state;boolean complete;Instant granted,segmentStarted,lastObserved,completed;
         SimulationBank.Scenario snapshot;

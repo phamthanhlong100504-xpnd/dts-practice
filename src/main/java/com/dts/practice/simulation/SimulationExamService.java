@@ -13,10 +13,27 @@ import static com.dts.practice.simulation.SimulationExamModel.*;
 import static com.dts.practice.simulation.SimulationExamRules.*;
 
 @Service
-@RequiredArgsConstructor
 public class SimulationExamService {
     private final SimulationExamAccess access;private final SimulationBankClient banks;private final SimulationExamRepository repo;
     private final SimulationExamMediaClient media;private final SimulationExamRules rules;private final SimulationLearningClock clock;
+    private final com.dts.practice.service.LearningProgressEventPublisher learningProgressPublisher;
+
+    public SimulationExamService(SimulationExamAccess access, SimulationBankClient banks, SimulationExamRepository repo,
+                                 SimulationExamMediaClient media, SimulationExamRules rules, SimulationLearningClock clock,
+                                 com.dts.practice.service.LearningProgressEventPublisher learningProgressPublisher) {
+        this.access = access;
+        this.banks = banks;
+        this.repo = repo;
+        this.media = media;
+        this.rules = rules;
+        this.clock = clock;
+        this.learningProgressPublisher = learningProgressPublisher;
+    }
+
+    public SimulationExamService(SimulationExamAccess access, SimulationBankClient banks, SimulationExamRepository repo,
+                                 SimulationExamMediaClient media, SimulationExamRules rules, SimulationLearningClock clock) {
+        this(access, banks, repo, media, rules, clock, null);
+    }
     @Value("${simulation.exams-enabled:true}")private boolean enabled=true;
     private SimulationAccess.Actor actor(boolean media){if(!enabled)throw SimulationExamFailure.unavailable();return access.require(media);}
     @Transactional(readOnly=true)
@@ -120,7 +137,28 @@ public class SimulationExamService {
         int total=frames.stream().mapToInt(f->f.score).sum();boolean passed=total>=r.passingScore;r.status="COMPLETED";r.completed=clock.now();r.updated=r.completed;
         var result=new Result(new Scope(r.user,r.license,r.bank),r.id,r.mode,"COMPLETED",r.bank,r.scoring,policy(r),10,10,total,50,r.passingScore,passed,passed?"PASSED":"FAILED",r.started,r.completed,
                 frames.stream().map(f->new ResultItem(f.position,f.score,5)).toList(),r.preset);
-        repo.result(r,result);repo.save(r);return ack(r,a.userId(),request.eventId(),"SUBMIT",hash,license);
+        repo.result(r,result);repo.save(r);
+        if(learningProgressPublisher!=null) {
+            String sessionPrefix = r.id.toString().substring(0, 8);
+            var items = frames.stream().map(f -> {
+                int scNum = f.snapshot != null ? f.snapshot.scenarioNumber() : f.position;
+                Integer scoreVal = f.score;
+                Integer respMs = f.responseMs;
+                String outcome = respMs == null ? "UNANSWERED" : (scoreVal != null && scoreVal > 0 ? "CORRECT" : "INCORRECT");
+                return com.dts.practice.dto.event.learning.ExamAttemptSubmittedKafkaEvent.Item.builder()
+                        .sourceOutcomeKey("sim-exam-" + sessionPrefix + "-scenario-" + scNum)
+                        .scenarioNumber(scNum)
+                        .scenarioId(null)
+                        .score(respMs == null ? null : scoreVal)
+                        .firstResponseMs(respMs)
+                        .durationMs(f.duration)
+                        .outcome(outcome)
+                        .answeredAt(f.completed != null ? f.completed : r.completed)
+                        .build();
+            }).toList();
+            learningProgressPublisher.publishSimulationExam(r.id, r.user, r.license, r.bank, r.completed, items);
+        }
+        return ack(r,a.userId(),request.eventId(),"SUBMIT",hash,license);
     }
     @Transactional
     public Session cancel(UUID session,Command request,String license) {

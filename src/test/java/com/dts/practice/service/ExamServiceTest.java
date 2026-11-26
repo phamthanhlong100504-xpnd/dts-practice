@@ -74,6 +74,9 @@ class ExamServiceTest {
     @Mock
     private PracticeResultEventPublisher practiceResultEventPublisher;
 
+    @Mock
+    private LearningProgressEventPublisher learningProgressEventPublisher;
+
     @InjectMocks
     private ExamService examService;
 

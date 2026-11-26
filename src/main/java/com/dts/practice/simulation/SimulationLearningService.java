@@ -13,14 +13,30 @@ import static com.dts.practice.simulation.SimulationLearningModel.*;
 import static com.dts.practice.simulation.SimulationLearningRules.*;
 
 @Service
-@RequiredArgsConstructor
 public class SimulationLearningService {
     private final SimulationAccess access;
     private final SimulationBankClient banks;
     private final SimulationLearningRepository repo;
     private final SimulationPlaybackClient playback;
     private final SimulationLearningClock clock;
+    private final com.dts.practice.service.LearningProgressEventPublisher learningProgressPublisher;
     @Value("${simulation.learning-enabled:true}") private boolean enabled=true;
+
+    public SimulationLearningService(SimulationAccess access, SimulationBankClient banks, SimulationLearningRepository repo,
+                                     SimulationPlaybackClient playback, SimulationLearningClock clock,
+                                     com.dts.practice.service.LearningProgressEventPublisher learningProgressPublisher) {
+        this.access = access;
+        this.banks = banks;
+        this.repo = repo;
+        this.playback = playback;
+        this.clock = clock;
+        this.learningProgressPublisher = learningProgressPublisher;
+    }
+
+    public SimulationLearningService(SimulationAccess access, SimulationBankClient banks, SimulationLearningRepository repo,
+                                     SimulationPlaybackClient playback, SimulationLearningClock clock) {
+        this(access, banks, repo, playback, clock, null);
+    }
 
     @Transactional
     public Attempt create(Create request) {
@@ -74,6 +90,11 @@ public class SimulationLearningService {
             if(r.responseMs!=null && Set.of("PLAYING","COMPLETED").contains(r.status)) return;
             position(r,request.mediaTimeMs(),clock.now(),true);
             r.responseMs=request.mediaTimeMs();r.responseEvent=request.eventId();r.lastMs=Math.max(r.lastMs,request.mediaTimeMs());r.lastObserved=clock.now();
+            int score=score(r.snapshot.scoringTimeline(),r.responseMs);
+            if(learningProgressPublisher!=null) {
+                int scNum = r.snapshot != null ? r.snapshot.scenarioNumber() : r.number;
+                learningProgressPublisher.publishSimulationPractice(r.id, r.user, r.license, r.bank, scNum, score, r.responseMs, r.duration, clock.now());
+            }
         });
     }
     @Transactional

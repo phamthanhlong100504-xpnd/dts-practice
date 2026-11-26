@@ -58,6 +58,7 @@ public class ExamService {
     private final WrongQuestionProgressService wrongQuestionProgressService;
     private final ExamProgressReceiptService examProgressReceiptService;
     private final PracticeResultEventPublisher practiceResultEventPublisher;
+    private final LearningProgressEventPublisher learningProgressEventPublisher;
     // ==================== START EXAM ====================
 
     public ExamSessionResponse startExam(
@@ -577,6 +578,10 @@ public class ExamService {
                         exam,
                         result.passed()
                 );
+                learningProgressEventPublisher.publishTheoryExamAttempt(
+                        exam,
+                        previous
+                );
                 return result;
         }
 
@@ -635,6 +640,10 @@ public class ExamService {
         practiceResultEventPublisher.publishExamResult(
                 exam,
                 result.passed()
+        );
+        learningProgressEventPublisher.publishTheoryExamAttempt(
+                exam,
+                answers
         );
 
         return result;
@@ -953,6 +962,10 @@ public class ExamService {
         practiceResultEventPublisher.publishExamResult(
                 exam,
                 passed
+        );
+        learningProgressEventPublisher.publishTheoryExamAttempt(
+                exam,
+                answers
         );
     }
 

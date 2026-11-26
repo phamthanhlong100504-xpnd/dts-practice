@@ -23,7 +23,7 @@ public final class SimulationLearningModel {
     public record Playback(UUID attemptId,UUID playbackEventId,String bankVersion,String videoUrl,java.time.OffsetDateTime expiresAt,String mimeType,int durationMs,int resumeAtMs) {}
     public record Cursor(UUID scenarioId,UUID sourceAttemptId,long revision) {}
     public record Stats(int completedAttemptCount,Integer bestScore,boolean bookmarked) {public boolean practiced() {return completedAttemptCount>0;}}
-    static final class Row {
+    public static final class Row {
         UUID id,user,createEvent,scenarioId,nextScenario,playbackId,responseEvent;
         String bank,scoring,manifest,license,status,reason;
         int number,chapter,duration,segmentStart,lastMs;

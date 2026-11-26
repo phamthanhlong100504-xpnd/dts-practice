@@ -103,6 +103,11 @@ exam:
   result-outbox:
     enabled: false
 
+practice:
+  learning-progress:
+    topic: ${KAFKA_TOPIC_LEARNING_PROGRESS:dts.practice.learning-progress.v1}
+    enabled: ${LEARNING_PROGRESS_KAFKA_ENABLED:true}
+
 # ==================== Simulation Config ====================
 simulation:
   content-origin: ${SIMULATION_CONTENT_ORIGIN:http://localhost:8082}
