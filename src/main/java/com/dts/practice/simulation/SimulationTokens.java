@@ -16,6 +16,7 @@ import java.util.*;
 
 @Component
 public class SimulationTokens {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SimulationTokens.class);
     private final String encodedSecret;
     private final SecretKey accessKey;
     private final SecretKey thumbnailKey;
@@ -31,11 +32,19 @@ public class SimulationTokens {
     Claims access(String token) {
         try {
             var claims=Jwts.parser().verifyWith(accessKey).requireIssuer(issuer).build().parseSignedClaims(token).getPayload();
-            if(claims.getExpiration()==null || claims.getIssuedAt()==null || claims.getIssuedAt().toInstant().isAfter(Instant.now())
+            // Cho phép dung sai 60 giây để tránh lệch đồng hồ giữa các container Docker
+            if(claims.getExpiration()==null || claims.getIssuedAt()==null || claims.getIssuedAt().toInstant().isAfter(Instant.now().plusSeconds(60))
                     || !claims.getExpiration().after(claims.getIssuedAt())
-                    || (claims.get("type")!=null && !"access".equals(claims.get("type")))) throw new IllegalArgumentException();
+                    || (claims.get("type")!=null && !"access".equals(claims.get("type")))) {
+                log.warn("Invalid claims in simulation access token: iat={}, exp={}, type={}, now={}",
+                        claims.getIssuedAt(), claims.getExpiration(), claims.get("type"), Instant.now());
+                throw new IllegalArgumentException();
+            }
             canonical(claims.getSubject());return claims;
-        } catch(Exception e) {throw SimulationFailure.unauthorized();}
+        } catch(Exception e) {
+            log.warn("Simulation access token rejected: {}", e.getMessage());
+            throw SimulationFailure.unauthorized();
+        }
     }
     String source() {
         try {
