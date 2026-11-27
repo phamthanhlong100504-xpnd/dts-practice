@@ -44,6 +44,10 @@ server:
 simulation:
   content-origin: ${SIMULATION_CONTENT_ORIGIN:http://content-builder:8082}
   media-origin: ${SIMULATION_MEDIA_ORIGIN:http://103.20.96.85:8080}
+  exam:
+    cleanup-enabled: ${SIMULATION_EXAM_CLEANUP_ENABLED:true}
+    cleanup-poll-ms: ${SIMULATION_EXAM_CLEANUP_POLL_MS:300000}
+    session-timeout-hours: ${SIMULATION_EXAM_SESSION_TIMEOUT_HOURS:2}
   performance:
     enabled: false
     poll-ms: 500

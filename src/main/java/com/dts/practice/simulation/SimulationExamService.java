@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.BiConsumer;
 import static com.dts.practice.simulation.SimulationExamModel.*;
@@ -35,14 +36,39 @@ public class SimulationExamService {
         this(access, banks, repo, media, rules, clock, null);
     }
     @Value("${simulation.exams-enabled:true}")private boolean enabled=true;
+    @Value("${simulation.exam.session-timeout-hours:2}") private long sessionTimeoutHours = 2;
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SimulationExamService.class);
+
+    private boolean isStale(Row r) {
+        Instant lastActivity = r.updated != null ? r.updated : (r.started != null ? r.started : r.created);
+        if (lastActivity == null) return false;
+        return Duration.between(lastActivity, clock.now()).toHours() >= sessionTimeoutHours;
+    }
+
+    private Optional<Row> resolveActiveSession(UUID userId) {
+        var active = repo.active(userId);
+        if (active.isPresent()) {
+            var r = active.get();
+            if (isStale(r)) {
+                log.info("Auto-cancelling stale simulation exam session {} for user {}", r.id, r.user);
+                r.status = "CANCELLED";
+                r.cancelled = clock.now();
+                r.updated = r.cancelled;
+                repo.save(r);
+                return Optional.empty();
+            }
+        }
+        return active;
+    }
+
     private SimulationAccess.Actor actor(boolean media){if(!enabled)throw SimulationExamFailure.unavailable();return access.require(media);}
-    @Transactional(readOnly=true)
+    @Transactional
     public Preparation preparation(String license) {
         var actor=actor(false);String code=SimulationLicensePolicy.require(license);var bank=banks.current();
-        return new Preparation(new Scope(actor.userId(),code,bank.bankVersion()),bank.bankVersion(),rules.currentPolicy(),repo.active(actor.userId()).map(r->view(r,code)).orElse(null));
+        return new Preparation(new Scope(actor.userId(),code,bank.bankVersion()),bank.bankVersion(),rules.currentPolicy(),resolveActiveSession(actor.userId()).map(r->view(r,code)).orElse(null));
     }
-    @Transactional(readOnly=true)
-    public Active active(String license){var a=actor(false);if(license!=null)SimulationLicensePolicy.require(license);return new Active(repo.active(a.userId()).map(r->view(r,license)).orElse(null));}
+    @Transactional
+    public Active active(String license){var a=actor(false);if(license!=null)SimulationLicensePolicy.require(license);return new Active(resolveActiveSession(a.userId()).map(r->view(r,license)).orElse(null));}
     @Transactional(readOnly=true)
     public Session get(UUID session,String license){var a=actor(false);return view(repo.get(a.userId(),id(session),false),license);}
     @Transactional
@@ -54,7 +80,7 @@ public class SimulationExamService {
         String license=SimulationLicensePolicy.require(request.licenseClass());if(request.bankVersion()!=null)SimulationBank.version(request.bankVersion());
         String hash=preset?digest("CREATE",request.mode(),license,request.bankVersion(),request.presetSetId(),request.presetVersionId()):digest("CREATE",request.mode(),license,request.bankVersion());repo.lock(a.userId());var previous=repo.created(a.userId(),key);
         if(previous.isPresent()){if(!previous.get().createHash.equals(hash))throw eventConflict();return view(previous.get(),license);}
-        var active=repo.active(a.userId());if(active.isPresent())throw SimulationExamFailure.active(active.get().id);
+        var active=resolveActiveSession(a.userId());if(active.isPresent())throw SimulationExamFailure.active(active.get().id);
         var bank=banks.current();SimulationBank.validate(new SimulationBank.Published(bank,"PUBLISHED",true,clock.now()),null);
         if(request.bankVersion()!=null&&!request.bankVersion().equals(bank.bankVersion()))throw SimulationExamFailure.conflict("SIMULATION_EXAM_BANK_CHANGED","Read current preparation before creating an exam");
         SimulationPresets.Version source=null;

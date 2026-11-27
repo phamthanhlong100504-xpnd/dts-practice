@@ -88,6 +88,13 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of("RESOURCE_NOT_FOUND", "Resource not found", traceId()));
     }
 
+    @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParam(org.springframework.web.bind.MissingServletRequestParameterException ex) {
+        log.warn("Missing request parameter: {}", ex.getParameterName());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of("MISSING_PARAMETER", "Required parameter is missing: " + ex.getParameterName(), traceId()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
         log.error("Unexpected error", ex);

@@ -114,6 +114,10 @@ simulation:
   media-origin: ${SIMULATION_MEDIA_ORIGIN:http://localhost:8080}
   learning-enabled: ${SIMULATION_LEARNING_ENABLED:true}
   exams-enabled: ${SIMULATION_EXAMS_ENABLED:true}
+  exam:
+    cleanup-enabled: ${SIMULATION_EXAM_CLEANUP_ENABLED:true}
+    cleanup-poll-ms: ${SIMULATION_EXAM_CLEANUP_POLL_MS:300000}
+    session-timeout-hours: ${SIMULATION_EXAM_SESSION_TIMEOUT_HOURS:2}
   performance:
     enabled: false
 

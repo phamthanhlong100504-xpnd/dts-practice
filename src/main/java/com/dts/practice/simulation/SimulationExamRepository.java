@@ -16,6 +16,14 @@ public class SimulationExamRepository {
     void lock(UUID user){jdbc.queryForList("SELECT pg_advisory_xact_lock(hashtextextended(?,32))",user.toString());}
     Optional<Row> created(UUID user,UUID key){return jdbc.query("SELECT * FROM simulation_exam_sessions WHERE user_id=? AND create_key=?",this::row,user,key).stream().findFirst();}
     Optional<Row> active(UUID user){return jdbc.query("SELECT * FROM simulation_exam_sessions WHERE user_id=? AND status IN ('IN_PROGRESS','READY_TO_SUBMIT')",this::row,user).stream().findFirst();}
+    public int cancelStaleSessions(Instant olderThan) {
+        return jdbc.update(
+            "UPDATE simulation_exam_sessions " +
+            "SET status = 'CANCELLED', cancelled_at = NOW(), updated_at = NOW() " +
+            "WHERE status IN ('IN_PROGRESS', 'READY_TO_SUBMIT') AND COALESCE(updated_at, started_at, created_at) < ?",
+            time(olderThan)
+        );
+    }
     Row get(UUID user,UUID id,boolean lock){return jdbc.query("SELECT * FROM simulation_exam_sessions WHERE user_id=? AND id=?"+(lock?" FOR UPDATE":""),this::row,user,id).stream().findFirst().orElseThrow(SimulationExamFailure::missing);}
     List<Frame> frames(UUID id){return jdbc.query("SELECT * FROM simulation_exam_positions WHERE session_id=? ORDER BY position",this::frame,id);}
     Frame frame(UUID id,int position){return jdbc.query("SELECT * FROM simulation_exam_positions WHERE session_id=? AND position=?",this::frame,id,position).stream().findFirst().orElseThrow(()->SimulationExamFailure.invalid("Invalid exam position"));}
