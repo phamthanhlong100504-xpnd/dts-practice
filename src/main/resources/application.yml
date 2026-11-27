@@ -73,7 +73,7 @@ server:
       max: 50
 
 jwt:
-  access-secret: ${JWT_ACCESS_SECRET}
+  access-secret: ${JWT_ACCESS_SECRET:uPq3xK8mR5vY2wZ9aB4cD7eF1gH3iJ6kL0nO5pQ8rS2tU4vW6xY9zA1bC3dE7fG9}
   issuer: ${JWT_ISSUER:dts-identity-service}
 
 identity:

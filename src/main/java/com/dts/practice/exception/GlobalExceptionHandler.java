@@ -95,6 +95,13 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of("MISSING_PARAMETER", "Required parameter is missing: " + ex.getParameterName(), traceId()));
     }
 
+    @ExceptionHandler(org.springframework.dao.DataAccessException.class)
+    public ResponseEntity<ErrorResponse> handleDataAccessException(org.springframework.dao.DataAccessException ex) {
+        log.error("Database access error: {}", ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ErrorResponse.of("DATABASE_ERROR", "Dữ liệu tạm thời không khả dụng, vui lòng thử lại.", traceId()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
         log.error("Unexpected error", ex);
