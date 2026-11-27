@@ -1,6 +1,7 @@
 package com.dts.practice.simulation;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,7 @@ import java.util.*;
 import static com.dts.practice.simulation.SimulationBookmarkModel.*;
 import static com.dts.practice.simulation.SimulationReviewModel.CompletedStats;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
@@ -24,9 +26,26 @@ public class SimulationBookmarkService {
 
     public BookmarkOverview overview(String license, String version) {
         var actor = access.read(false);
-        var state = state(actor, license, version);
-        return new BookmarkOverview(state.scope(), state.bank().scoringVersion(),
-                state.bookmarked().size(), state.chapters(), state.version());
+        String code = SimulationLicensePolicy.require(license);
+        var bank = banks.load(version);
+        try {
+            var state = state(actor, code, bank);
+            return new BookmarkOverview(state.scope(), bank.scoringVersion(),
+                    state.bookmarked().size(), state.chapters(), state.version());
+        } catch (com.dts.practice.exception.BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Failed to load bookmark overview for user {} on bank {}: {}",
+                    actor.userId(), bank.bankVersion(), e.getMessage(), e);
+            var emptyChapters = bank.chapters().stream()
+                    .map(c -> new BookmarkChapter(c.chapterId(), c.chapterId(), c.name(), 0))
+                    .toList();
+            String fallbackVersion = sha256(actor.userId() + "|" + bank.bankVersion()
+                    + "|" + bank.scoringVersion() + "|" + bank.manifestSha256());
+            return new BookmarkOverview(
+                    new SimulationLearningReads.Scope(actor.userId(), code, bank.bankVersion()),
+                    bank.scoringVersion(), 0, emptyChapters, fallbackVersion);
+        }
     }
 
     public BookmarkPage list(String license, String version, Integer chapterId, String sort,
@@ -57,6 +76,10 @@ public class SimulationBookmarkService {
     private State state(SimulationAccess.Actor actor, String license, String version) {
         String code = SimulationLicensePolicy.require(license);
         var bank = banks.load(version);
+        return state(actor, code, bank);
+    }
+
+    private State state(SimulationAccess.Actor actor, String code, SimulationBank.Snapshot bank) {
         // The same Card02 reader queries the existing Card01 tables; there is no second bookmark store.
         var completed = repo.completed(actor.userId(), bank);
         var marks = repo.bookmarks(actor.userId(), bank.bankVersion());

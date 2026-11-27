@@ -1,6 +1,7 @@
 package com.dts.practice.simulation;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ public class SimulationLearningService {
     private final com.dts.practice.service.LearningProgressEventPublisher learningProgressPublisher;
     @Value("${simulation.learning-enabled:true}") private boolean enabled=true;
 
+    @Autowired
     public SimulationLearningService(SimulationAccess access, SimulationBankClient banks, SimulationLearningRepository repo,
                                      SimulationPlaybackClient playback, SimulationLearningClock clock,
                                      com.dts.practice.service.LearningProgressEventPublisher learningProgressPublisher) {

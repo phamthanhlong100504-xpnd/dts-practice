@@ -22,7 +22,7 @@ import static com.dts.practice.simulation.SimulationExamModel.*;
 public class SimulationExamController {
     private static final String MEDIA="hasAuthority('PERM_simulations:read') and hasAuthority('PERM_simulations:exam') and hasAuthority('PERM_media:read')";
     private final SimulationExamService service;
-    @GetMapping("/preparation") public ResponseEntity<ApiResponse<Preparation>> preparation(@RequestParam String licenseClass){return ok(service.preparation(license(licenseClass)));}
+    @GetMapping("/preparation") public ResponseEntity<ApiResponse<Preparation>> preparation(@RequestParam(required=false,defaultValue="B") String licenseClass){return ok(service.preparation(license(licenseClass)));}
     @GetMapping("/sessions/active") public ResponseEntity<ApiResponse<Active>> active(@RequestParam(required=false)String licenseClass){return ok(service.active(license(licenseClass)));}
     @PostMapping("/sessions") @PreAuthorize(MEDIA)
     public ResponseEntity<ApiResponse<Session>> create(@RequestBody JsonNode body,HttpServletRequest http) {

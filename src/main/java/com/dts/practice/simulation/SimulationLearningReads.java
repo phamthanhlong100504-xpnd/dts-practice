@@ -1,6 +1,7 @@
 package com.dts.practice.simulation;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -8,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import static com.dts.practice.simulation.SimulationLearningModel.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
@@ -23,8 +25,18 @@ public class SimulationLearningReads {
     public record Hint(String hazardSign,String recognitionTip) {}
     public record Detail(Scope scope,Item scenario,Hint hintPreview,Policy policy,Attempt latestAttempt,UUID previousScenarioId,UUID nextScenarioId) {}
     public Overview overview(String license,String version) {
-        var actor=access.read(false);var code=SimulationLicensePolicy.require(license);var bank=banks.load(version);var stats=repo.stats(actor.userId(),bank.bankVersion());
-        var chapters=bank.chapters().stream().map(c->chapter(bank,c.chapterId(),stats)).toList();int done=chapters.stream().mapToInt(Chapter::practicedScenarios).sum();
+        var actor=access.read(false);var code=SimulationLicensePolicy.require(license);var bank=banks.load(version);
+        Map<UUID,Stats> stats;
+        try {
+            stats=repo.stats(actor.userId(),bank.bankVersion());
+        } catch (com.dts.practice.exception.BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Failed to load learning overview stats for user {} on bank {}: {}",actor.userId(),bank.bankVersion(),e.getMessage(),e);
+            stats=Map.of();
+        }
+        Map<UUID,Stats> resolved=stats;
+        var chapters=bank.chapters().stream().map(c->chapter(bank,c.chapterId(),resolved)).toList();int done=chapters.stream().mapToInt(Chapter::practicedScenarios).sum();
         return new Overview(new Scope(actor.userId(),code,bank.bankVersion()),120,done,percent(done,120),chapters);
     }
     public Page chapter(int chapter,String license,String version,String filter,String sort,int page,int size) {

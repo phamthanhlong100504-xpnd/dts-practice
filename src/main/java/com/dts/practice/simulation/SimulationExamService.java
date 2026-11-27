@@ -1,6 +1,7 @@
 package com.dts.practice.simulation;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ public class SimulationExamService {
     private final SimulationExamMediaClient media;private final SimulationExamRules rules;private final SimulationLearningClock clock;
     private final com.dts.practice.service.LearningProgressEventPublisher learningProgressPublisher;
 
+    @Autowired
     public SimulationExamService(SimulationExamAccess access, SimulationBankClient banks, SimulationExamRepository repo,
                                  SimulationExamMediaClient media, SimulationExamRules rules, SimulationLearningClock clock,
                                  com.dts.practice.service.LearningProgressEventPublisher learningProgressPublisher) {
@@ -61,14 +63,25 @@ public class SimulationExamService {
         return active;
     }
 
+    private Session safeActiveSessionView(UUID userId, String license) {
+        try {
+            return resolveActiveSession(userId).map(r -> view(r, license)).orElse(null);
+        } catch (com.dts.practice.exception.BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Failed to resolve active simulation exam session view for user {}: {}", userId, e.getMessage(), e);
+            return null;
+        }
+    }
+
     private SimulationAccess.Actor actor(boolean media){if(!enabled)throw SimulationExamFailure.unavailable();return access.require(media);}
     @Transactional
     public Preparation preparation(String license) {
         var actor=actor(false);String code=SimulationLicensePolicy.require(license);var bank=banks.current();
-        return new Preparation(new Scope(actor.userId(),code,bank.bankVersion()),bank.bankVersion(),rules.currentPolicy(),resolveActiveSession(actor.userId()).map(r->view(r,code)).orElse(null));
+        return new Preparation(new Scope(actor.userId(),code,bank.bankVersion()),bank.bankVersion(),rules.currentPolicy(),safeActiveSessionView(actor.userId(),code));
     }
     @Transactional
-    public Active active(String license){var a=actor(false);if(license!=null)SimulationLicensePolicy.require(license);return new Active(resolveActiveSession(a.userId()).map(r->view(r,license)).orElse(null));}
+    public Active active(String license){var a=actor(false);if(license!=null)SimulationLicensePolicy.require(license);return new Active(safeActiveSessionView(a.userId(),license));}
     @Transactional(readOnly=true)
     public Session get(UUID session,String license){var a=actor(false);return view(repo.get(a.userId(),id(session),false),license);}
     @Transactional
